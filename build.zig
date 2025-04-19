@@ -31,6 +31,8 @@ pub fn build(b: *std.Build) void {
         .name = "df_translation_library",
         .root_module = exe_mod,
     });
+    
+    exe.root_module.addImport("zul", b.dependency("zul", .{}).module("zul"));
 
     b.installArtifact(exe);
 

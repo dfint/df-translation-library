@@ -1,4 +1,5 @@
 const std = @import("std");
+const zul = @import("zul");
 
 const TagPartsIterator = struct {
     raw: []const u8,
@@ -34,6 +35,8 @@ test "TagPartsIterator" {
     try std.testing.expectEqualStrings("de", iter.next().?);
     try std.testing.expectEqualStrings("fe", iter.next().?);
     try std.testing.expectEqual(null, iter.next());
+
+    std.debug.print("TagPartsIterator tests passed\n", .{});
 }
 
 const Token = struct {
@@ -90,20 +93,32 @@ const LineTokenizer = struct {
 test "LineTokenizer" {
     var iter = LineTokenizer{ .raw = "   [TAG1:cd:de:fe]    [TAG2]a" };
 
-    var token = iter.next().?;
-    try token.assertEqual(Token{ .text = "   ", .is_tag = false });
+    try zul.testing.expectEqual(
+        Token{ .text = "   ", .is_tag = false },
+        iter.next().?,
+    );
 
-    token = iter.next().?;
-    try token.assertEqual(Token{ .text = "[TAG1:cd:de:fe]", .is_tag = true });
+    try zul.testing.expectEqual(
+        Token{ .text = "[TAG1:cd:de:fe]", .is_tag = true },
+        iter.next().?,
+    );
 
-    token = iter.next().?;
-    try token.assertEqual(Token{ .text = "    ", .is_tag = false });
+    try zul.testing.expectEqual(
+        Token{ .text = "    ", .is_tag = false },
+        iter.next().?,
+    );
 
-    token = iter.next().?;
-    try token.assertEqual(Token{ .text = "[TAG2]", .is_tag = true });
+    try zul.testing.expectEqual(
+        Token{ .text = "[TAG2]", .is_tag = true },
+        iter.next().?,
+    );
 
-    token = iter.next().?;
-    try token.assertEqual(Token{ .text = "a", .is_tag = false });
+    try zul.testing.expectEqual(
+        Token{ .text = "a", .is_tag = false },
+        iter.next().?,
+    );
 
     try std.testing.expectEqualDeep(null, iter.next());
+
+    std.debug.print("LineTokenizer tests passed\n", .{});
 }
