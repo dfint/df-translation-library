@@ -35,3 +35,75 @@ test "TagPartsIterator" {
     try std.testing.expectEqualStrings("fe", iter.next().?);
     try std.testing.expectEqual(null, iter.next());
 }
+
+const Token = struct {
+    text: []const u8,
+    is_tag: bool,
+
+    fn assertEqual(self: Token, other: Token) !void {
+        try std.testing.expectEqualStrings(self.text, other.text);
+        try std.testing.expectEqual(self.is_tag, other.is_tag);
+    }
+};
+
+const LineTokenizer = struct {
+    raw: []const u8,
+    pos: usize = 0,
+    token: Token = undefined,
+
+    pub fn next(self: *LineTokenizer) ?Token {
+        if (self.pos >= self.raw.len) {
+            return null;
+        }
+
+        var is_tag: bool = false;
+        const start = self.pos;
+        if (self.raw[start] == '[') {
+            is_tag = true;
+            self.pos += 1;
+        }
+
+        while (self.pos < self.raw.len) {
+            if (is_tag) {
+                if (self.raw[self.pos] == ']') {
+                    self.pos += 1;
+                    break;
+                }
+            } else {
+                if (self.raw[self.pos] == '[') {
+                    break;
+                }
+            }
+            self.pos += 1;
+        }
+
+        const end = self.pos;
+        self.token = .{
+            .text = self.raw[start..end],
+            .is_tag = is_tag,
+        };
+
+        return self.token;
+    }
+};
+
+test "LineTokenizer" {
+    var iter = LineTokenizer{ .raw = "   [TAG1:cd:de:fe]    [TAG2]a" };
+
+    var token = iter.next().?;
+    try token.assertEqual(Token{ .text = "   ", .is_tag = false });
+
+    token = iter.next().?;
+    try token.assertEqual(Token{ .text = "[TAG1:cd:de:fe]", .is_tag = true });
+
+    token = iter.next().?;
+    try token.assertEqual(Token{ .text = "    ", .is_tag = false });
+
+    token = iter.next().?;
+    try token.assertEqual(Token{ .text = "[TAG2]", .is_tag = true });
+
+    token = iter.next().?;
+    try token.assertEqual(Token{ .text = "a", .is_tag = false });
+
+    try std.testing.expectEqualDeep(null, iter.next());
+}
