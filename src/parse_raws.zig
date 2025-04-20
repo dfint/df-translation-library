@@ -35,8 +35,6 @@ test "TagPartsIterator" {
     try std.testing.expectEqualStrings("de", iter.next().?);
     try std.testing.expectEqualStrings("fe", iter.next().?);
     try std.testing.expectEqual(null, iter.next());
-
-    std.debug.print("TagPartsIterator tests passed\n", .{});
 }
 
 const Token = struct {
@@ -114,6 +112,4 @@ test "LineTokenizer" {
     );
 
     try std.testing.expectEqualDeep(null, iter.next());
-
-    std.debug.print("LineTokenizer tests passed\n", .{});
 }

@@ -31,7 +31,7 @@ pub fn build(b: *std.Build) void {
         .name = "df_translation_library",
         .root_module = exe_mod,
     });
-    
+
     exe.root_module.addImport("zul", b.dependency("zul", .{}).module("zul"));
 
     b.installArtifact(exe);
@@ -55,6 +55,7 @@ pub fn build(b: *std.Build) void {
 
     const exe_unit_tests = b.addTest(.{
         .root_module = exe_mod,
+        .test_runner = .{ .path = b.path("test_runner.zig"), .mode = .simple },
     });
 
     const run_exe_unit_tests = b.addRunArtifact(exe_unit_tests);
