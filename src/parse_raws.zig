@@ -42,11 +42,6 @@ test "TagPartsIterator" {
 const Token = struct {
     text: []const u8,
     is_tag: bool,
-
-    fn assertEqual(self: Token, other: Token) !void {
-        try std.testing.expectEqualStrings(self.text, other.text);
-        try std.testing.expectEqual(self.is_tag, other.is_tag);
-    }
 };
 
 const LineTokenizer = struct {
