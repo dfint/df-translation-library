@@ -113,3 +113,48 @@ test "LineTokenizer" {
 
     try std.testing.expectEqualDeep(null, iter.next());
 }
+
+test "LineTokenizer multiline" {
+    const data =
+        \\[TAG1:cd:de:fe]
+        \\[TAG2]a
+        \\[TAG3]b
+        \\[TAG4]c
+    ;
+
+    var parser = LineTokenizer{ .raw = data };
+
+    try zul.testing.expectEqual(
+        Token{ .text = "[TAG1:cd:de:fe]", .is_tag = true },
+        parser.next().?,
+    );
+    try zul.testing.expectEqual(
+        Token{ .text = "\n", .is_tag = false },
+        parser.next().?,
+    );
+    try zul.testing.expectEqual(
+        Token{ .text = "[TAG2]", .is_tag = true },
+        parser.next().?,
+    );
+    try zul.testing.expectEqual(
+        Token{ .text = "a\n", .is_tag = false },
+        parser.next().?,
+    );
+    try zul.testing.expectEqual(
+        Token{ .text = "[TAG3]", .is_tag = true },
+        parser.next().?,
+    );
+    try zul.testing.expectEqual(
+        Token{ .text = "b\n", .is_tag = false },
+        parser.next().?,
+    );
+    try zul.testing.expectEqual(
+        Token{ .text = "[TAG4]", .is_tag = true },
+        parser.next().?,
+    );
+    try zul.testing.expectEqual(
+        Token{ .text = "c", .is_tag = false },
+        parser.next().?,
+    );
+    try std.testing.expectEqual(null, parser.next());
+}
