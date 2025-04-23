@@ -158,6 +158,24 @@ const MoParser = struct {
     };
 };
 
+test "MoParser" {
+    const file = try std.fs.cwd().openFile("test_data/test.mo", .{});
+    const parser = try MoParser.init(file);
+    const expected_number_of_strings: u32 = 5;
+    try std.testing.expectEqual(expected_number_of_strings, parser.mo_header_info.number_of_strings);
+
+    var iterator = try parser.iterateEntries(std.testing.allocator);
+    var i: u32 = 0;
+    while (try iterator.next()) |entry| {
+        defer entry.deinit(std.testing.allocator);
+        try std.testing.expect(entry.context == null or entry.context.?.len > 0 and entry.context.?.len < 100);
+        try std.testing.expect(entry.original_string.len < 100);
+        try std.testing.expect(entry.translation_string.len > 0 and entry.translation_string.len < 100);
+        i += 1;
+    }
+    try std.testing.expectEqual(expected_number_of_strings, i);
+}
+
 pub fn print_mo(mo_path: []const u8) !void {
     const file = try std.fs.cwd().openFile(mo_path, .{});
     defer file.close();
