@@ -41,12 +41,9 @@ const MoFileEntry = struct {
     }
 };
 
-fn readU32(reader: std.fs.File.Reader) !u32 {
-    return try reader.readInt(u32, std.builtin.Endian.little);
-}
-
 const MoParser = struct {
-    const MO_MAGIC = "\xde\x12\x04\x95";
+    const MO_MAGIC_LE = "\xde\x12\x04\x95";
+    const MO_MAGIC_BE = "\x95\x04\x12\xde";
 
     file: std.fs.File,
     mo_header_info: MoHeaderInfo = undefined,
@@ -62,20 +59,28 @@ const MoParser = struct {
 
     fn readHeader(file: std.fs.File) !MoHeaderInfo {
         try file.seekTo(0);
-        const magic = try file.reader().readBytesNoEof(MO_MAGIC.len);
-        if (!std.mem.eql(u8, &magic, MO_MAGIC)) {
+        const magic = try file.reader().readBytesNoEof(MO_MAGIC_LE.len);
+
+        var byteorder: std.builtin.Endian = undefined;
+        if (std.mem.eql(u8, &magic, MO_MAGIC_LE)) {
+            byteorder = .little;
+        } else if (std.mem.eql(u8, &magic, MO_MAGIC_BE)) {
+            byteorder = .big;
+        } else {
             return MoParserError.InvalidFormat;
         }
 
         try file.seekTo(8);
         return .{
-            .number_of_strings = try readU32(file.reader()),
-            .original_string_table_offset = try readU32(file.reader()),
-            .translation_string_table_offset = try readU32(file.reader()),
+            .byteorder = byteorder,
+            .number_of_strings = try file.reader().readInt(u32, byteorder),
+            .original_string_table_offset = try file.reader().readInt(u32, byteorder),
+            .translation_string_table_offset = try file.reader().readInt(u32, byteorder),
         };
     }
 
     const MoHeaderInfo = struct {
+        byteorder: std.builtin.Endian,
         number_of_strings: u32,
         original_string_table_offset: u32,
         translation_string_table_offset: u32,
@@ -115,8 +120,8 @@ const MoParser = struct {
 
         fn readString(self: *Iterator, table_offset: u32, index: u32) ![]const u8 {
             try self.file.seekTo(table_offset + index * STRING_TABLE_ENTRY_SIZE);
-            const string_size = try readU32(self.file.reader());
-            const string_offset = try readU32(self.file.reader());
+            const string_size = try self.file.reader().readInt(u32, self.mo_header_info.byteorder);
+            const string_offset = try self.file.reader().readInt(u32, self.mo_header_info.byteorder);
 
             try self.file.seekTo(string_offset);
             const string = try self.allocator.alloc(u8, string_size);
