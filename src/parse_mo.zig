@@ -100,8 +100,6 @@ const MoParser = struct {
         file: std.fs.File,
         mo_header_info: MoHeaderInfo,
 
-        const Self = @This();
-
         pub fn next(self: *Iterator) !?MoFileEntry {
             if (self.i >= self.mo_header_info.number_of_strings) {
                 return null;
