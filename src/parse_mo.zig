@@ -44,6 +44,32 @@ const MoFileEntry = struct {
     }
 };
 
+test "MoFileEntry no allocation" {
+    const original_string = "context\x04original string";
+    const translation_string = "translation string";
+
+    const mo_entry = MoFileEntry.init(original_string, translation_string);
+
+    try std.testing.expectEqualStrings("original string", mo_entry.original_string);
+    try std.testing.expectEqualStrings("context", mo_entry.context orelse "");
+    try std.testing.expectEqualStrings("translation string", mo_entry.translation_string);
+    try std.testing.expectEqualStrings("context\x04original string", mo_entry._full_original_string);
+}
+
+test "MoFileEntry with allocation" {
+    var allocator = std.testing.allocator;
+    const original_string = allocator.dupe(u8, "context\x04original string") catch unreachable;
+    const translation_string = allocator.dupe(u8, "translation string") catch unreachable;
+
+    const mo_entry = MoFileEntry.init(original_string, translation_string);
+    defer mo_entry.deinit(allocator);
+
+    try std.testing.expectEqualStrings("original string", mo_entry.original_string);
+    try std.testing.expectEqualStrings("context", mo_entry.context orelse "");
+    try std.testing.expectEqualStrings("translation string", mo_entry.translation_string);
+    try std.testing.expectEqualStrings("context\x04original string", mo_entry._full_original_string);
+}
+
 const MoParser = struct {
     const MO_MAGIC_LE = "\xde\x12\x04\x95";
     const MO_MAGIC_BE = "\x95\x04\x12\xde";

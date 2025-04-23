@@ -3,6 +3,7 @@ const parse_mo = @import("parse_mo.zig");
 
 test {
     _ = parse_raws;
+    _ = parse_mo;
 }
 
 pub fn main() !void {
