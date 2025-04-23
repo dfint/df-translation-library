@@ -144,7 +144,7 @@ pub fn print_mo(mo_path: []const u8) !void {
 
     var debug_allocator = std.heap.DebugAllocator(.{}){};
     const allocator = debug_allocator.allocator();
-    var iterator = parser.iterateEntries(allocator) catch unreachable;
+    var iterator = try parser.iterateEntries(allocator);
     while (try iterator.next()) |entry| {
         defer entry.deinit(allocator);
 
