@@ -4,7 +4,7 @@ const MoParserError = error{
     InvalidFormat,
 };
 
-const CONTEXT_SEPARATOR = '\x04';
+const CONTEXT_SEPARATOR: []const u8 = "\x04";
 
 const MoFileEntry = struct {
     original_string: []const u8,
@@ -13,8 +13,10 @@ const MoFileEntry = struct {
 
     _full_original_string: []const u8,
 
-    pub fn init(original_string: []const u8, translation_string: []const u8) MoFileEntry {
-        const self = .{
+    const Self = @This();
+
+    pub fn init(original_string: []const u8, translation_string: []const u8) Self {
+        var self: Self = .{
             .original_string = original_string,
             .translation_string = translation_string,
             ._full_original_string = original_string,
@@ -24,7 +26,7 @@ const MoFileEntry = struct {
         return self;
     }
 
-    fn extractContext(self: *MoFileEntry) void {
+    fn extractContext(self: *Self) void {
         if (std.mem.indexOf(u8, self.original_string, CONTEXT_SEPARATOR)) |index| {
             self.context = self.original_string[0..index];
             self.original_string = self.original_string[index + 1 ..];
@@ -33,37 +35,57 @@ const MoFileEntry = struct {
         }
     }
 
-    pub fn deinit(self: MoFileEntry, allocator: std.mem.Allocator) void {
+    pub fn deinit(self: Self, allocator: std.mem.Allocator) void {
         allocator.free(self._full_original_string);
         allocator.free(self.translation_string);
     }
 };
 
+fn readU32(reader: std.fs.File.Reader) !u32 {
+    return try reader.readInt(u32, std.builtin.Endian.little);
+}
+
 const MoParser = struct {
     const MO_MAGIC = "\xde\x12\x04\x95";
 
     file: std.fs.File,
+    mo_header_info: MoHeaderInfo = undefined,
 
     const Self = @This();
 
-    pub fn iterateEntries(self: Self, buffer: *MoFileEntry) !Iterator {
-        try self.file.seekTo(0);
-        const magic = try self.file.reader().readBytesNoEof(MO_MAGIC.len);
-        if (!std.mem.eql(u8, magic, MO_MAGIC)) {
+    pub fn init(file: std.fs.File) !Self {
+        return .{
+            .file = file,
+            .mo_header_info = try Self.readHeader(file),
+        };
+    }
+
+    fn readHeader(file: std.fs.File) !MoHeaderInfo {
+        try file.seekTo(0);
+        const magic = try file.reader().readBytesNoEof(MO_MAGIC.len);
+        if (!std.mem.eql(u8, &magic, MO_MAGIC)) {
             return MoParserError.InvalidFormat;
         }
 
-        try self.file.seekTo(8);
-        const number_of_strings = try self.file.reader().readIntBig(u32);
-        const original_string_table_offset = try self.file.reader().readIntBig(u32);
-        const translation_string_table_offset = try self.file.reader().readIntBig(u32);
+        try file.seekTo(8);
+        return .{
+            .number_of_strings = try readU32(file.reader()),
+            .original_string_table_offset = try readU32(file.reader()),
+            .translation_string_table_offset = try readU32(file.reader()),
+        };
+    }
 
+    const MoHeaderInfo = struct {
+        number_of_strings: u32,
+        original_string_table_offset: u32,
+        translation_string_table_offset: u32,
+    };
+
+    pub fn iterateEntries(self: Self, allocator: std.mem.Allocator) !Iterator {
         return Iterator{
             .file = self.file,
-            .number_of_strings = number_of_strings,
-            .original_string_table_offset = original_string_table_offset,
-            .translation_string_table_offset = translation_string_table_offset,
-            .buffer = buffer,
+            .mo_header_info = self.mo_header_info,
+            .allocator = allocator,
         };
     }
 
@@ -71,37 +93,62 @@ const MoParser = struct {
         allocator: std.mem.Allocator,
         i: u32 = 0,
         file: std.fs.File,
-        number_of_strings: u32,
-        original_string_table_offset: u32,
-        translation_string_table_offset: u32,
+        mo_header_info: MoHeaderInfo,
+
+        const Self = @This();
 
         pub fn next(self: *Iterator) !?MoFileEntry {
-            if (self.i >= self.number_of_strings) {
+            if (self.i >= self.mo_header_info.number_of_strings) {
                 return null;
             }
             defer self.i += 1;
 
+            const original_string_table_offset = self.mo_header_info.original_string_table_offset;
+            const translation_string_table_offset = self.mo_header_info.translation_string_table_offset;
             return MoFileEntry.init(
-                try self.readString(self.original_string_table_offset, self.i),
-                try self.readString(self.translation_string_table_offset, self.i),
+                try self.readString(original_string_table_offset, self.i),
+                try self.readString(translation_string_table_offset, self.i),
             );
         }
 
+        const STRING_TABLE_ENTRY_SIZE = 8;
+
         fn readString(self: *Iterator, table_offset: u32, index: u32) ![]const u8 {
-            try self.file.seekTo(table_offset + index * 32);
-            const string_size = try self.file.reader().readIntBig(u32);
-            const string_offset = try self.file.reader().readIntBig(u32);
+            try self.file.seekTo(table_offset + index * STRING_TABLE_ENTRY_SIZE);
+            const string_size = try readU32(self.file.reader());
+            const string_offset = try readU32(self.file.reader());
 
             try self.file.seekTo(string_offset);
-            var string = try self.allocator.alloc(u8, string_size);
-            return try self.file.reader().read(&string);
-            // return try self.file.reader().read(string[0..string_size]);
+            const string = try self.allocator.alloc(u8, string_size);
+            _ = try self.file.reader().read(string);
+            return string;
         }
     };
 };
 
-fn main() void {
-    const file = std.fs.openFileAbsolute("foo.mo", .{}) catch unreachable;
-    var parser = MoParser{ .file = file };
-    parser.readHeader() catch unreachable;
+pub fn print_mo(mo_path: []const u8) !void {
+    const file = try std.fs.cwd().openFile(mo_path, .{});
+    defer file.close();
+
+    const parser = try MoParser.init(file);
+    const mo_header_info = parser.mo_header_info;
+    std.debug.print("number of strings: {d}\n", .{mo_header_info.number_of_strings});
+    std.debug.print("original string table offset: {d}\n", .{mo_header_info.original_string_table_offset});
+    std.debug.print(
+        "translation string table offset: {d}\n\n",
+        .{mo_header_info.translation_string_table_offset},
+    );
+
+    var debug_allocator = std.heap.DebugAllocator(.{}){};
+    const allocator = debug_allocator.allocator();
+    var iterator = parser.iterateEntries(allocator) catch unreachable;
+    while (try iterator.next()) |entry| {
+        defer entry.deinit(allocator);
+
+        std.debug.print("context: {s}\noriginal: {s}\ntranslation: {s}\n\n", .{
+            entry.context orelse "NULL",
+            entry.original_string,
+            entry.translation_string,
+        });
+    }
 }
