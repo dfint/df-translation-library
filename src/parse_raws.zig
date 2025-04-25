@@ -45,7 +45,6 @@ const Token = struct {
 const LineTokenizer = struct {
     raw: []const u8,
     pos: usize = 0,
-    token: Token = undefined,
 
     pub fn next(self: *LineTokenizer) ?Token {
         if (self.pos >= self.raw.len) {
@@ -74,12 +73,11 @@ const LineTokenizer = struct {
         }
 
         const end = self.pos;
-        self.token = .{
+
+        return .{
             .text = self.raw[start..end],
             .is_tag = is_tag,
         };
-
-        return self.token;
     }
 };
 
