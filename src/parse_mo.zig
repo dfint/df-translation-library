@@ -128,8 +128,22 @@ const MoParser = struct {
         i: u32 = 0,
         file: std.fs.File,
         mo_header_info: MoHeaderInfo,
+        value: ?MoFileEntry = null,
+
+        /// .deinit() of the iterator must be called only if the iterator was not exhausted
+        pub fn deinit(self: *Iterator) void {
+            if (self.value) |value| {
+                value.deinit(self.allocator);
+                self.value = null;
+            }
+        }
 
         pub fn next(self: *Iterator) !?MoFileEntry {
+            if (self.value) |value| {
+                value.deinit(self.allocator);
+                self.value = null;
+            }
+
             if (self.i >= self.mo_header_info.number_of_strings) {
                 return null;
             }
@@ -137,10 +151,11 @@ const MoParser = struct {
 
             const original_string_table_offset = self.mo_header_info.original_string_table_offset;
             const translation_string_table_offset = self.mo_header_info.translation_string_table_offset;
-            return MoFileEntry.init(
+            self.value = MoFileEntry.init(
                 try self.readString(original_string_table_offset, self.i),
                 try self.readString(translation_string_table_offset, self.i),
             );
+            return self.value;
         }
 
         const STRING_TABLE_ENTRY_SIZE = 8;
@@ -165,9 +180,9 @@ test "MoParser" {
     try std.testing.expectEqual(expected_number_of_strings, parser.mo_header_info.number_of_strings);
 
     var iterator = try parser.iterateEntries(std.testing.allocator);
+
     var i: u32 = 0;
     while (try iterator.next()) |entry| {
-        defer entry.deinit(std.testing.allocator);
         try std.testing.expect(entry.context == null or entry.context.?.len > 0 and entry.context.?.len < 100);
         try std.testing.expect(entry.original_string.len < 100);
         try std.testing.expect(entry.translation_string.len > 0 and entry.translation_string.len < 100);
@@ -201,4 +216,84 @@ pub fn print_mo(mo_path: []const u8) !void {
             entry.translation_string,
         });
     }
+}
+
+const DictionaryKey = struct {
+    context: ?[]const u8 = null,
+    original_string: []const u8,
+};
+
+const Dictionary = struct {
+    allocator: std.mem.Allocator,
+    entries: std.StringHashMap([]const u8),
+
+    fn init(allocator: std.mem.Allocator) Dictionary {
+        return Dictionary{
+            .allocator = allocator,
+            .entries = std.StringHashMap([]const u8).init(allocator),
+        };
+    }
+
+    pub fn load(allocator: std.mem.Allocator, po_path: []const u8) !Dictionary {
+        const file = try std.fs.cwd().openFile(po_path, .{});
+        const parser = try MoParser.init(file);
+        var dictionary = Dictionary.init(allocator);
+        var iterator = try parser.iterateEntries(allocator);
+        while (try iterator.next()) |entry| {
+            if (entry.original_string.len == 0) continue;
+            try dictionary.put(entry);
+        }
+        return dictionary;
+    }
+
+    pub fn deinit(self: *Dictionary) void {
+        var items = self.entries.iterator();
+        while (items.next()) |item| {
+            self.allocator.free(item.key_ptr.*);
+            self.allocator.free(item.value_ptr.*);
+        }
+        self.entries.deinit();
+    }
+
+    pub fn put(self: *Dictionary, mo_file_entry: MoFileEntry) !void {
+        const key = self.allocator.dupe(u8, mo_file_entry._full_original_string) catch unreachable;
+        const value = self.allocator.dupe(u8, mo_file_entry.translation_string) catch unreachable;
+        try self.entries.put(key, value);
+    }
+
+    pub fn get(self: Dictionary, context: ?[]const u8, original_string: []const u8) !?[]const u8 {
+        var buffer = std.ArrayList(u8).init(self.allocator);
+        defer buffer.deinit();
+
+        if (context) |c| {
+            try buffer.appendSlice(c);
+            try buffer.appendSlice(CONTEXT_SEPARATOR);
+        }
+        try buffer.appendSlice(original_string);
+
+        return self.entries.get(buffer.items);
+    }
+};
+
+test "load dictionary" {
+    const allocator = std.testing.allocator;
+    var dictionary = try Dictionary.load(allocator, "test_data/test.mo");
+    defer dictionary.deinit();
+    try std.testing.expectEqualStrings(
+        "Translation 1",
+        (try dictionary.get(null, "Text 1")).?,
+    );
+    try std.testing.expectEqualStrings(
+        "Translation 2",
+        (try dictionary.get(null, "Text 2")).?,
+    );
+    try std.testing.expectEqualStrings(
+        "Translation 3",
+        (try dictionary.get(null, "Text 3")).?,
+    );
+    try std.testing.expectEqualStrings(
+        "Translation 4",
+        (try dictionary.get("Context", "Text 4")).?,
+    );
+    try std.testing.expect((try dictionary.get("Context", "Text 5")) == null);
 }
