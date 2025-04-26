@@ -42,11 +42,11 @@ const Token = struct {
     is_tag: bool,
 };
 
-const LineTokenizer = struct {
+const StringTokenizer = struct {
     raw: []const u8,
     pos: usize = 0,
 
-    pub fn next(self: *LineTokenizer) ?Token {
+    pub fn next(self: *StringTokenizer) ?Token {
         if (self.pos >= self.raw.len) {
             return null;
         }
@@ -81,8 +81,8 @@ const LineTokenizer = struct {
     }
 };
 
-test "LineTokenizer" {
-    var iter = LineTokenizer{ .raw = "   [TAG1:cd:de:fe]    [TAG2]a" };
+test "StringTokenizer" {
+    var iter = StringTokenizer{ .raw = "   [TAG1:cd:de:fe]    [TAG2]a" };
 
     try zul.testing.expectEqual(
         Token{ .text = "   ", .is_tag = false },
@@ -112,7 +112,7 @@ test "LineTokenizer" {
     try std.testing.expectEqualDeep(null, iter.next());
 }
 
-test "LineTokenizer multiline" {
+test "StringTokenizer multiline" {
     const data =
         \\[TAG1:cd:de:fe]
         \\[TAG2]a
@@ -120,7 +120,7 @@ test "LineTokenizer multiline" {
         \\[TAG4]c
     ;
 
-    var parser = LineTokenizer{ .raw = data };
+    var parser = StringTokenizer{ .raw = data };
 
     try zul.testing.expectEqual(
         Token{ .text = "[TAG1:cd:de:fe]", .is_tag = true },
@@ -155,4 +155,26 @@ test "LineTokenizer multiline" {
         parser.next().?,
     );
     try std.testing.expectEqual(null, parser.next());
+}
+
+fn parseRawFile(allocator: std.mem.Allocator, file: std.fs.File) !StringTokenizer {
+    const raw = try file.readToEndAlloc(allocator, std.math.maxInt(usize));
+    return StringTokenizer{ .raw = raw };
+}
+
+test "parse raw file" {
+    const allocator = std.testing.allocator;
+    const file_path = "test_data/object_creature.txt";
+    const file = try std.fs.cwd().openFile(file_path, .{});
+    defer file.close();
+
+    var iterator = try parseRawFile(allocator, file);
+    defer allocator.free(iterator.raw);
+    while (iterator.next()) |token| {
+        if (token.is_tag) {
+            try std.testing.expect(token.text.len > 0 and
+                token.text[0] == '[' and
+                token.text[token.text.len - 1] == ']');
+        }
+    }
 }
