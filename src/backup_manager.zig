@@ -4,21 +4,25 @@ const std = @import("std");
 // 2. If doesn't exist, than create it
 // 3. Return original path
 
+const BackupError = error{
+    BackupMissing,
+};
+
 const BackupManager = struct {
     allocator: std.mem.Allocator,
-    backup_name_buffer: std.ArrayList(u8),
+    backup_path: std.ArrayList(u8),
 
     const Self = @This();
 
     pub fn init(allocator: std.mem.Allocator, filename: []const u8) !Self {
         return BackupManager{
             .allocator = allocator,
-            .backup_name_buffer = Self.getBackupPath(filename),
+            .backup_path = Self.getBackupPath(allocator, filename),
         };
     }
 
     pub fn deinit(self: *Self) void {
-        self.backup_name_buffer.deinit();
+        self.backup_path.deinit();
     }
 
     fn getBackupPath(allocator: std.mem.Allocator, file_path: []const u8) !std.ArrayList(u8) {
@@ -37,6 +41,18 @@ const BackupManager = struct {
         try backup_path.appendSlice(file_name[0..last_dot_index]);
         try backup_path.appendSlice(".bak");
         return backup_path;
+    }
+    
+    pub fn backup(self: Self) !void {
+        _ = self;
+    }
+    
+    pub fn restore(self: Self) BackupError.BackupMissing!void {
+        _ = self;
+    }
+    
+    pub fn deleteBackup(self: Self) !void {
+        _ = self;
     }
 };
 
