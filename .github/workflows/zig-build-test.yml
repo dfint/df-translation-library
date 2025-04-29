@@ -35,7 +35,7 @@ jobs:
           version: ${{ matrix.zig-version }}
 
       - name: Check formatting
-        run: zig fmt --check
+        run: zig fmt --check .
 
       - name: Run tests
         run: zig build test
