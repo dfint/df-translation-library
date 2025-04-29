@@ -33,4 +33,9 @@ jobs:
       - uses: mlugg/setup-zig@v1
         with:
           version: ${{ matrix.zig-version }}
-      - run: zig build test
+
+      - name: Check formatting
+        run: zig fmt --check
+
+      - name: Run tests
+        run: zig build test
