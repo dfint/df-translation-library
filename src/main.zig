@@ -3,10 +3,12 @@ const zul = @import("zul");
 
 const parse_raws = @import("parse_raws.zig");
 const parse_mo = @import("parse_mo.zig");
+const backup_manager = @import("backup_manager.zig");
 
 test {
     _ = parse_raws;
     _ = parse_mo;
+    _ = backup_manager;
 }
 
 pub fn main() !void {
