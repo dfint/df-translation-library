@@ -1,9 +1,5 @@
 const std = @import("std");
 
-// 1. Check if backup exists
-// 2. If doesn't exist, than create it
-// 3. Return original path
-
 const BackupManager = struct {
     allocator: std.mem.Allocator,
     backup_dir: std.fs.Dir,
