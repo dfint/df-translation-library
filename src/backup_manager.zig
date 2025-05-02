@@ -4,42 +4,25 @@ const std = @import("std");
 // 2. If doesn't exist, than create it
 // 3. Return original path
 
-const BackupError = error{
-    BackupMissing,
-};
-
 const BackupManager = struct {
     allocator: std.mem.Allocator,
-    backup_path: std.ArrayList(u8),
+    backup_dir: std.fs.Dir,
+    source_filename: []const u8,
+    backup_filename_buffer: std.ArrayList(u8),
 
     const Self = @This();
 
-    pub fn init(allocator: std.mem.Allocator, filename: []const u8) !Self {
+    pub fn init(allocator: std.mem.Allocator, directory: std.fs.Dir, filename: []const u8) !Self {
         return BackupManager{
             .allocator = allocator,
-            .backup_path = Self.getBackupPath(allocator, filename),
+            .source_filename = filename,
+            .backup_dir = directory,
+            .backup_filename_buffer = try Self.getBackupFileName(allocator, filename),
         };
     }
 
     pub fn deinit(self: *Self) void {
-        self.backup_path.deinit();
-    }
-
-    fn getBackupPath(allocator: std.mem.Allocator, file_path: []const u8) !std.ArrayList(u8) {
-        var backup_path = std.ArrayList(u8).init(allocator);
-
-        const last_slash_index = std.mem.lastIndexOfAny(u8, file_path, "/\\");
-        var file_name: []const u8 = undefined;
-        if (last_slash_index) |lsi| {
-            try backup_path.appendSlice(file_path[0 .. lsi + 1]);
-            file_name = file_path[lsi + 1 .. file_path.len];
-        } else {
-            file_name = file_path;
-        }
-
-        try backup_path.appendSlice(Self.getFileNameStem(file_name));
-        try backup_path.appendSlice(".bak");
-        return backup_path;
+        self.backup_filename_buffer.deinit();
     }
 
     fn getBackupFileName(allocator: std.mem.Allocator, file_name: []const u8) !std.ArrayList(u8) {
@@ -55,15 +38,33 @@ const BackupManager = struct {
     }
 
     pub fn backup(self: Self) !void {
-        _ = self;
+        self.backup_dir.access(
+            self.backup_filename_buffer.items,
+            .{ .mode = .read_only },
+        ) catch |err| switch (err) {
+            error.FileNotFound => {
+                try self.backup_dir.copyFile(
+                    self.source_filename,
+                    self.backup_dir,
+                    self.backup_filename_buffer.items,
+                    .{},
+                );
+            },
+            else => return err,
+        };
     }
 
-    pub fn restore(self: Self) BackupError.BackupMissing!void {
-        _ = self;
+    pub fn restore(self: Self) !void {
+        _ = try self.backup_dir.updateFile(
+            self.backup_filename_buffer.items,
+            self.backup_dir,
+            self.source_filename,
+            .{},
+        );
     }
 
     pub fn deleteBackup(self: Self) !void {
-        _ = self;
+        try self.backup_dir.deleteFile(self.backup_filename_buffer.items);
     }
 };
 
@@ -71,26 +72,6 @@ const TestDataEntry = struct {
     input: []const u8,
     expected: []const u8,
 };
-
-test "getBackupPath" {
-    const allocator = std.testing.allocator;
-
-    const data = [_]TestDataEntry{
-        TestDataEntry{ .input = "dir/test.txt", .expected = "dir/test.bak" },
-        TestDataEntry{ .input = "/test.txt", .expected = "/test.bak" },
-        TestDataEntry{ .input = "dir\\test.txt", .expected = "dir\\test.bak" },
-        TestDataEntry{ .input = "test.txt", .expected = "test.bak" },
-        TestDataEntry{ .input = "dir/test", .expected = "dir/test.bak" },
-        TestDataEntry{ .input = "di.r/test.txt", .expected = "di.r/test.bak" },
-        TestDataEntry{ .input = "dir/.somefile", .expected = "dir/.somefile.bak" },
-    };
-
-    for (data) |row| {
-        const backup_path = try BackupManager.getBackupPath(allocator, row.input);
-        defer backup_path.deinit();
-        try std.testing.expectEqualStrings(row.expected, backup_path.items);
-    }
-}
 
 test "getBackupFileName" {
     const allocator = std.testing.allocator;
@@ -121,4 +102,60 @@ test "getFileNameStem" {
         const backup_name = BackupManager.getFileNameStem(row.input);
         try std.testing.expectEqualStrings(row.expected, backup_name);
     }
+}
+
+test "test backup" {
+    const dir_name = "test_dir";
+    const source_file_name = "file.txt";
+    const file_contents = "Hello, world!";
+
+    std.fs.cwd().makeDir(dir_name) catch |err| switch (err) {
+        error.PathAlreadyExists => {}, // Ignore
+        else => return err,
+    };
+
+    const directory = try std.fs.cwd().openDir(dir_name, .{});
+
+    {
+        const file = try directory.createFile(source_file_name, .{});
+        defer file.close();
+        try file.writeAll(file_contents);
+    }
+    defer directory.deleteFile(source_file_name) catch unreachable;
+
+    const allocator = std.testing.allocator;
+    var backup_manager = try BackupManager.init(allocator, directory, source_file_name);
+    defer {
+        backup_manager.deleteBackup() catch unreachable;
+        backup_manager.deinit();
+    }
+
+    const backup_file_name = backup_manager.backup_filename_buffer.items;
+
+    try backup_manager.backup();
+
+    const actual_content = try directory.readFileAlloc(
+        allocator,
+        backup_file_name,
+        std.math.maxInt(usize),
+    );
+    defer allocator.free(actual_content);
+
+    try std.testing.expectEqualStrings(file_contents, actual_content);
+
+    {
+        const file = try directory.openFile(source_file_name, .{ .mode = .write_only });
+        defer file.close();
+        try file.writeAll("");
+    }
+
+    try backup_manager.restore();
+    const restored_content = try directory.readFileAlloc(
+        allocator,
+        source_file_name,
+        std.math.maxInt(usize),
+    );
+    defer allocator.free(restored_content);
+
+    try std.testing.expectEqualStrings(file_contents, restored_content);
 }
