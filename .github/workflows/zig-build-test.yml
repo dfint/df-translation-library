@@ -5,13 +5,13 @@ on:
     branches: [ "main" ]
     paths:
       - '**.zig'
-      - '.github/workflows/zig-build-test.yml'
+      - '.github/**.yml'
 
   pull_request:
     branches: [ "main" ]
     paths:
       - '**.zig'
-      - '.github/workflows/zig-build-test.yml'
+      - '.github/**.yml'
 
   schedule:
     - cron: "0 0 * * Sat"
