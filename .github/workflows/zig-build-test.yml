@@ -33,6 +33,7 @@ jobs:
       - uses: mlugg/setup-zig@v2
         with:
           version: ${{ matrix.zig-version }}
+          use-cache: ${{ matrix.zig-version != 'master' && matrix.zig-version != 'mach-latest' }}
           cache-key: ${{ matrix.zig-version }}
 
       - name: Check formatting
