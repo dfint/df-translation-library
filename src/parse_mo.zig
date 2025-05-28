@@ -11,7 +11,7 @@ const CONTEXT_SEPARATOR: []const u8 = "\x04";
 
 const MoFileEntry = struct {
     original_string: []const u8,
-    context: ?[]const u8 = undefined,
+    context: ?[]const u8 = null,
     translation_string: []const u8,
 
     _full_original_string: []const u8,
@@ -75,7 +75,7 @@ const MoParser = struct {
     const MO_MAGIC_BE = "\x95\x04\x12\xde";
 
     file: std.fs.File,
-    mo_header_info: MoHeaderInfo = undefined,
+    mo_header_info: MoHeaderInfo,
 
     const Self = @This();
 
@@ -86,18 +86,18 @@ const MoParser = struct {
         };
     }
 
+    fn getByteorder(magic: *const [MO_MAGIC_LE.len]u8) MoParserError!std.builtin.Endian {
+        if (std.mem.eql(u8, magic, MO_MAGIC_LE)) {
+            return .little;
+        } else if (std.mem.eql(u8, magic, MO_MAGIC_BE)) {
+            return .big;
+        } else return MoParserError.InvalidFormat;
+    }
+
     fn readHeader(file: std.fs.File) !MoHeaderInfo {
         try file.seekTo(0);
         const magic = try file.reader().readBytesNoEof(MO_MAGIC_LE.len);
-
-        var byteorder: std.builtin.Endian = undefined;
-        if (std.mem.eql(u8, &magic, MO_MAGIC_LE)) {
-            byteorder = .little;
-        } else if (std.mem.eql(u8, &magic, MO_MAGIC_BE)) {
-            byteorder = .big;
-        } else {
-            return MoParserError.InvalidFormat;
-        }
+        const byteorder: std.builtin.Endian = try MoParser.getByteorder(&magic);
 
         try file.seekTo(8);
         return .{
@@ -218,11 +218,6 @@ pub fn print_mo(mo_path: []const u8) !void {
     }
 }
 
-const DictionaryKey = struct {
-    context: ?[]const u8 = null,
-    original_string: []const u8,
-};
-
 const Dictionary = struct {
     allocator: std.mem.Allocator,
     entries: std.StringHashMap([]const u8),
@@ -256,8 +251,8 @@ const Dictionary = struct {
     }
 
     pub fn put(self: *Dictionary, mo_file_entry: MoFileEntry) !void {
-        const key = self.allocator.dupe(u8, mo_file_entry._full_original_string) catch unreachable;
-        const value = self.allocator.dupe(u8, mo_file_entry.translation_string) catch unreachable;
+        const key = try self.allocator.dupe(u8, mo_file_entry._full_original_string);
+        const value = try self.allocator.dupe(u8, mo_file_entry.translation_string);
         try self.entries.put(key, value);
     }
 
