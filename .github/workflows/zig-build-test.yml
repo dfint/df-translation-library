@@ -39,3 +39,6 @@ jobs:
 
       - name: Run tests
         run: zig build test
+      
+      - name: Check print_mo cli
+        run: zig build run -- --print_mo=test_data/test.mo

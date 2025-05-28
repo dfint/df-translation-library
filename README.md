@@ -6,6 +6,5 @@
 Print contents of a mo file:
 
 ```shell
-zig build
-zig-out/bin/df_translation_library --print_mo=test_data/test.mo
+zig build run -- --print_mo=test_data/test.mo
 ```
