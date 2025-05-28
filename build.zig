@@ -20,7 +20,7 @@ pub fn build(b: *std.Build) void {
     exe_mod.addImport("df_translation_library_lib", lib_mod);
 
     const lib = b.addLibrary(.{
-        .linkage = .static,
+        .linkage = .dynamic,
         .name = "df_translation_library",
         .root_module = lib_mod,
     });
