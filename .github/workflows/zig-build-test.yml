@@ -37,8 +37,14 @@ jobs:
       - name: Check formatting
         run: zig fmt --check .
 
+      - name: Install and run zlint
+        run: |
+          curl -fsSL https://github.com/DonIsaac/zlint/releases/download/v0.7.6/zlint-linux-x86_64 > zlint
+          chmod +x zlint
+          ./zlint --deny-warnings
+
       - name: Run tests
         run: zig build test
-      
+
       - name: Check print_mo cli
         run: zig build run -- --print_mo=test_data/test.mo
