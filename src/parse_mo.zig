@@ -11,7 +11,7 @@ const CONTEXT_SEPARATOR: []const u8 = "\x04";
 
 const MoFileEntry = struct {
     original_string: []const u8,
-    context: ?[]const u8 = null,
+    context: ?[]const u8 = undefined,
     translation_string: []const u8,
 
     _full_original_string: []const u8,
