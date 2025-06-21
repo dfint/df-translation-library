@@ -5,12 +5,14 @@ on:
     branches: [ "main" ]
     paths:
       - '**.zig'
+      - 'build.zig.zon'
       - '.github/**.yml'
 
   pull_request:
     branches: [ "main" ]
     paths:
       - '**.zig'
+      - 'build.zig.zon'
       - '.github/**.yml'
 
   schedule:
