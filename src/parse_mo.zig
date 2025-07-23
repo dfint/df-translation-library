@@ -1,6 +1,6 @@
-/// A simple parser for GNU Gettext .mo files.
-/// Does not support plural forms (yet?)
-/// Format description: https://www.gnu.org/software/gettext/manual/html_node/MO-Files.html
+//! A simple parser for GNU Gettext .mo files.
+//! Does not support plural forms (yet?)
+//! Format description: https://www.gnu.org/software/gettext/manual/html_node/MO-Files.html
 const std = @import("std");
 
 const MoParserError = error{
