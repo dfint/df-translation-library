@@ -7,8 +7,8 @@
 
     .dependencies = .{
         .zul = .{
-            .url = "https://github.com/karlseguin/zul/archive/e21f5f7.tar.gz",
-            .hash = "zul-0.0.0-1oDotxx3BwBKB5TBN4m09axTTMQxbSef3fEQBx70iIXA",
+            .url = "https://github.com/karlseguin/zul/archive/9dff2f2.tar.gz",
+            .hash = "zul-0.0.0-1oDot06QBwAogVwyG0VAUIUbJnOOfsK7f25t66lFJZi7",
         },
     },
 
