@@ -18,13 +18,13 @@ const BackupManager = struct {
     }
 
     pub fn deinit(self: *Self) void {
-        self.backup_filename_buffer.deinit();
+        self.backup_filename_buffer.deinit(self.allocator);
     }
 
     fn getBackupFileName(allocator: std.mem.Allocator, file_name: []const u8) !std.ArrayList(u8) {
-        var backup_file_name = std.ArrayList(u8).init(allocator);
-        try backup_file_name.appendSlice(Self.getFileNameStem(file_name));
-        try backup_file_name.appendSlice(".bak");
+        var backup_file_name: std.ArrayList(u8) = .empty;
+        try backup_file_name.appendSlice(allocator, Self.getFileNameStem(file_name));
+        try backup_file_name.appendSlice(allocator, ".bak");
         return backup_file_name;
     }
 
@@ -80,8 +80,8 @@ test "getBackupFileName" {
     };
 
     for (data) |row| {
-        const backup_path = try BackupManager.getBackupFileName(allocator, row.input);
-        defer backup_path.deinit();
+        var backup_path = try BackupManager.getBackupFileName(allocator, row.input);
+        defer backup_path.deinit(allocator);
         try std.testing.expectEqualStrings(row.expected, backup_path.items);
     }
 }
