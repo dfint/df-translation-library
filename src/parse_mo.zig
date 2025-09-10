@@ -95,7 +95,7 @@ const MoParser = struct {
     }
 
     fn readHeader(file: std.fs.File) !MoHeaderInfo {
-        var buffer: [1024]u8 = undefined;
+        var buffer: [@min(@sizeOf(u32), MO_MAGIC_LE.len)]u8 = undefined;
         var reader = file.reader(&buffer);
         try reader.seekTo(0);
 
