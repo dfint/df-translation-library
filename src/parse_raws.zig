@@ -159,7 +159,7 @@ test "StringTokenizer multiline" {
 
 fn parseRawFile(allocator: std.mem.Allocator, file: std.fs.File) !StringTokenizer {
     const raw = try file.readToEndAlloc(allocator, std.math.maxInt(usize));
-    return StringTokenizer{ .raw = raw };
+    return .{ .raw = raw };
 }
 
 test "parse raw file" {

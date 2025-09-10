@@ -9,7 +9,7 @@ const BackupManager = struct {
     const Self = @This();
 
     pub fn init(allocator: std.mem.Allocator, directory: std.fs.Dir, filename: []const u8) !Self {
-        return BackupManager{
+        return .{
             .allocator = allocator,
             .source_filename = filename,
             .backup_dir = directory,
@@ -73,10 +73,10 @@ test "getBackupFileName" {
     const allocator = std.testing.allocator;
 
     const data = [_]TestDataEntry{
-        TestDataEntry{ .input = "test.txt", .expected = "test.bak" },
-        TestDataEntry{ .input = "test", .expected = "test.bak" },
-        TestDataEntry{ .input = "some.file.txt", .expected = "some.file.bak" },
-        TestDataEntry{ .input = ".somefile", .expected = ".somefile.bak" },
+        .{ .input = "test.txt", .expected = "test.bak" },
+        .{ .input = "test", .expected = "test.bak" },
+        .{ .input = "some.file.txt", .expected = "some.file.bak" },
+        .{ .input = ".somefile", .expected = ".somefile.bak" },
     };
 
     for (data) |row| {
@@ -88,10 +88,10 @@ test "getBackupFileName" {
 
 test "getFileNameStem" {
     const data = [_]TestDataEntry{
-        TestDataEntry{ .input = "test.txt", .expected = "test" },
-        TestDataEntry{ .input = "test", .expected = "test" },
-        TestDataEntry{ .input = "some.file.txt", .expected = "some.file" },
-        TestDataEntry{ .input = ".somefile", .expected = ".somefile" },
+        .{ .input = "test.txt", .expected = "test" },
+        .{ .input = "test", .expected = "test" },
+        .{ .input = "some.file.txt", .expected = "some.file" },
+        .{ .input = ".somefile", .expected = ".somefile" },
     };
 
     for (data) |row| {
