@@ -95,15 +95,15 @@ const MoParser = struct {
     }
 
     fn readHeader(file: std.fs.File) !MoHeaderInfo {
-        try file.seekTo(0);
+        var buffer: [1024]u8 = undefined;
+        var reader = file.reader(&buffer);
+        try reader.seekTo(0);
+
         var magic: [MO_MAGIC_LE.len]u8 = undefined;
-        _ = try file.read(&magic);
+        try reader.interface.readSliceAll(&magic);
         const byteorder: std.builtin.Endian = try MoParser.getByteorder(&magic);
 
-        try file.seekTo(8);
-        var buffer: [4]u8 = undefined;
-        var reader = file.reader(&buffer);
-
+        try reader.seekTo(8);
         return .{
             .byteorder = byteorder,
             .number_of_strings = try reader.interface.takeInt(u32, byteorder),
@@ -166,13 +166,12 @@ const MoParser = struct {
 
         fn readString(self: *Iterator, table_offset: u32, index: u32) ![]const u8 {
             var buffer: [1024]u8 = undefined;
-
-            try self.file.seekTo(table_offset + index * STRING_TABLE_ENTRY_SIZE);
             var reader = self.file.reader(&buffer);
+            try reader.seekTo(table_offset + index * STRING_TABLE_ENTRY_SIZE);
             const string_size = try reader.interface.takeInt(u32, self.mo_header_info.byteorder);
             const string_offset = try reader.interface.takeInt(u32, self.mo_header_info.byteorder);
 
-            try self.file.seekTo(string_offset);
+            try reader.seekTo(string_offset);
             return try reader.interface.readAlloc(self.allocator, string_size);
         }
     };
