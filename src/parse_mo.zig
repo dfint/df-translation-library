@@ -86,7 +86,7 @@ const MoParser = struct {
         };
     }
 
-    fn getByteorder(magic: *const [MO_MAGIC_LE.len]u8) MoParserError!std.builtin.Endian {
+    fn getByteorder(magic: []u8) MoParserError!std.builtin.Endian {
         if (std.mem.eql(u8, magic, MO_MAGIC_LE)) {
             return .little;
         } else if (std.mem.eql(u8, magic, MO_MAGIC_BE)) {
@@ -99,9 +99,8 @@ const MoParser = struct {
         var reader = file.reader(&buffer);
         try reader.seekTo(0);
 
-        var magic: [MO_MAGIC_LE.len]u8 = undefined;
-        try reader.interface.readSliceAll(&magic);
-        const byteorder: std.builtin.Endian = try MoParser.getByteorder(&magic);
+        const magic = try reader.interface.peek(MO_MAGIC_LE.len);
+        const byteorder: std.builtin.Endian = try MoParser.getByteorder(magic);
 
         try reader.seekTo(8);
         return .{
