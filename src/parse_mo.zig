@@ -86,7 +86,7 @@ const MoParser = struct {
         };
     }
 
-    fn getByteorder(magic: *const [MO_MAGIC_LE.len]u8) MoParserError!std.builtin.Endian {
+    fn getByteorder(magic: []u8) MoParserError!std.builtin.Endian {
         if (std.mem.eql(u8, magic, MO_MAGIC_LE)) {
             return .little;
         } else if (std.mem.eql(u8, magic, MO_MAGIC_BE)) {
@@ -95,16 +95,19 @@ const MoParser = struct {
     }
 
     fn readHeader(file: std.fs.File) !MoHeaderInfo {
-        try file.seekTo(0);
-        const magic = try file.reader().readBytesNoEof(MO_MAGIC_LE.len);
-        const byteorder: std.builtin.Endian = try MoParser.getByteorder(&magic);
+        var buffer: [@min(@sizeOf(u32), MO_MAGIC_LE.len)]u8 = undefined;
+        var reader = file.reader(&buffer);
+        try reader.seekTo(0);
 
-        try file.seekTo(8);
+        const magic = try reader.interface.peek(MO_MAGIC_LE.len);
+        const byteorder: std.builtin.Endian = try MoParser.getByteorder(magic);
+
+        try reader.seekTo(8);
         return .{
             .byteorder = byteorder,
-            .number_of_strings = try file.reader().readInt(u32, byteorder),
-            .original_string_table_offset = try file.reader().readInt(u32, byteorder),
-            .translation_string_table_offset = try file.reader().readInt(u32, byteorder),
+            .number_of_strings = try reader.interface.takeInt(u32, byteorder),
+            .original_string_table_offset = try reader.interface.takeInt(u32, byteorder),
+            .translation_string_table_offset = try reader.interface.takeInt(u32, byteorder),
         };
     }
 
@@ -161,14 +164,14 @@ const MoParser = struct {
         const STRING_TABLE_ENTRY_SIZE = 8;
 
         fn readString(self: *Iterator, table_offset: u32, index: u32) ![]const u8 {
-            try self.file.seekTo(table_offset + index * STRING_TABLE_ENTRY_SIZE);
-            const string_size = try self.file.reader().readInt(u32, self.mo_header_info.byteorder);
-            const string_offset = try self.file.reader().readInt(u32, self.mo_header_info.byteorder);
+            var buffer: [1024]u8 = undefined;
+            var reader = self.file.reader(&buffer);
+            try reader.seekTo(table_offset + index * STRING_TABLE_ENTRY_SIZE);
+            const string_size = try reader.interface.takeInt(u32, self.mo_header_info.byteorder);
+            const string_offset = try reader.interface.takeInt(u32, self.mo_header_info.byteorder);
 
-            try self.file.seekTo(string_offset);
-            const string = try self.allocator.alloc(u8, string_size);
-            _ = try self.file.reader().read(string);
-            return string;
+            try reader.seekTo(string_offset);
+            return try reader.interface.readAlloc(self.allocator, string_size);
         }
     };
 };
@@ -257,14 +260,14 @@ const Dictionary = struct {
     }
 
     pub fn get(self: Dictionary, context: ?[]const u8, original_string: []const u8) !?[]const u8 {
-        var buffer = std.ArrayList(u8).init(self.allocator);
-        defer buffer.deinit();
+        var buffer = std.ArrayList(u8).empty;
+        defer buffer.deinit(self.allocator);
 
         if (context) |c| {
-            try buffer.appendSlice(c);
-            try buffer.appendSlice(CONTEXT_SEPARATOR);
+            try buffer.appendSlice(self.allocator, c);
+            try buffer.appendSlice(self.allocator, CONTEXT_SEPARATOR);
         }
-        try buffer.appendSlice(original_string);
+        try buffer.appendSlice(self.allocator, original_string);
 
         return self.entries.get(buffer.items);
     }

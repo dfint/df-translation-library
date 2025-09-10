@@ -3,12 +3,12 @@
     .version = "0.0.0",
     .fingerprint = 0x50682d388edbee9a, // Changing this has security and trust implications.
 
-    .minimum_zig_version = "0.14.0",
+    .minimum_zig_version = "0.15.0",
 
     .dependencies = .{
         .zul = .{
-            .url = "https://github.com/karlseguin/zul/archive/e21f5f7.tar.gz",
-            .hash = "zul-0.0.0-1oDotxx3BwBKB5TBN4m09axTTMQxbSef3fEQBx70iIXA",
+            .url = "https://github.com/karlseguin/zul/archive/9dff2f2.tar.gz",
+            .hash = "zul-0.0.0-1oDot06QBwAogVwyG0VAUIUbJnOOfsK7f25t66lFJZi7",
         },
     },
 
