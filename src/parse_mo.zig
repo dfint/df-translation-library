@@ -262,14 +262,14 @@ const Dictionary = struct {
     }
 
     pub fn get(self: Dictionary, context: ?[]const u8, original_string: []const u8) !?[]const u8 {
-        var buffer = std.ArrayList(u8).init(self.allocator);
-        defer buffer.deinit();
+        var buffer = std.ArrayList(u8).empty;
+        defer buffer.deinit(self.allocator);
 
         if (context) |c| {
-            try buffer.appendSlice(c);
-            try buffer.appendSlice(CONTEXT_SEPARATOR);
+            try buffer.appendSlice(self.allocator, c);
+            try buffer.appendSlice(self.allocator, CONTEXT_SEPARATOR);
         }
-        try buffer.appendSlice(original_string);
+        try buffer.appendSlice(self.allocator, original_string);
 
         return self.entries.get(buffer.items);
     }
