@@ -96,15 +96,19 @@ const MoParser = struct {
 
     fn readHeader(file: std.fs.File) !MoHeaderInfo {
         try file.seekTo(0);
-        const magic = try file.reader().readBytesNoEof(MO_MAGIC_LE.len);
+        var magic: [MO_MAGIC_LE.len]u8 = undefined;
+        _ = try file.read(&magic);
         const byteorder: std.builtin.Endian = try MoParser.getByteorder(&magic);
 
         try file.seekTo(8);
+        var buffer: [4]u8 = undefined;
+        var reader = file.reader(&buffer);
+
         return .{
             .byteorder = byteorder,
-            .number_of_strings = try file.reader().readInt(u32, byteorder),
-            .original_string_table_offset = try file.reader().readInt(u32, byteorder),
-            .translation_string_table_offset = try file.reader().readInt(u32, byteorder),
+            .number_of_strings = try reader.interface.takeInt(u32, byteorder),
+            .original_string_table_offset = try reader.interface.takeInt(u32, byteorder),
+            .translation_string_table_offset = try reader.interface.takeInt(u32, byteorder),
         };
     }
 
@@ -161,14 +165,15 @@ const MoParser = struct {
         const STRING_TABLE_ENTRY_SIZE = 8;
 
         fn readString(self: *Iterator, table_offset: u32, index: u32) ![]const u8 {
+            var buffer: [1024]u8 = undefined;
+
             try self.file.seekTo(table_offset + index * STRING_TABLE_ENTRY_SIZE);
-            const string_size = try self.file.reader().readInt(u32, self.mo_header_info.byteorder);
-            const string_offset = try self.file.reader().readInt(u32, self.mo_header_info.byteorder);
+            var reader = self.file.reader(&buffer);
+            const string_size = try reader.interface.takeInt(u32, self.mo_header_info.byteorder);
+            const string_offset = try reader.interface.takeInt(u32, self.mo_header_info.byteorder);
 
             try self.file.seekTo(string_offset);
-            const string = try self.allocator.alloc(u8, string_size);
-            _ = try self.file.reader().read(string);
-            return string;
+            return try reader.interface.readAlloc(self.allocator, string_size);
         }
     };
 };
