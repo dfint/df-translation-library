@@ -40,7 +40,7 @@ jobs:
 
       - name: Install and run zlint
         run: |
-          curl -fsSL https://github.com/DonIsaac/zlint/releases/download/v0.7.6/zlint-linux-x86_64 > zlint
+          curl -fsSL https://github.com/DonIsaac/zlint/releases/download/v0.7.9/zlint-linux-x86_64 > zlint
           chmod +x zlint
           ./zlint --deny-warnings
 
