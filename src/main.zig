@@ -11,18 +11,13 @@ test {
     _ = backup_manager;
 }
 
-pub fn main() !void {
-    var da = std.heap.DebugAllocator(.{}){};
-    defer _ = da.deinit();
-    const allocator = da.allocator();
-
-    var args = try zul.CommandLineArgs.parse(allocator);
+pub fn main(init: std.process.Init) !void {
+    // const gpa = init.gpa;
+    // const io = init.io;
+    const arena = init.arena.allocator();
+    const args_iterator = init.minimal.args.iterate();
+    var args = try zul.CommandLineArgs.parseFromIterator(arena, args_iterator);
     defer args.deinit();
-
-    if (args.count() == 0) {
-        std.debug.print("No arguments passed\n", .{});
-        return;
-    }
 
     if (args.contains("print_mo")) {
         const print_mo_arg = args.get("print_mo") orelse {
