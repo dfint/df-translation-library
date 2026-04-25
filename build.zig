@@ -32,7 +32,8 @@ pub fn build(b: *std.Build) void {
         .root_module = exe_mod,
     });
 
-    exe.root_module.addImport("zul", b.dependency("zul", .{}).module("zul"));
+    const zig_collections = b.dependency("zig_collections", .{});
+    exe.root_module.addImport("zig_collections", zig_collections.module("zig_collections"));
 
     b.installArtifact(exe);
 

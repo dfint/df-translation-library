@@ -1,5 +1,6 @@
 const std = @import("std");
-const zul = @import("zul");
+pub const CommandLineArgs = @import("CommandLineArgs.zig");
+const library = @import("zig_collections");
 
 const parse_raws = @import("parse_raws.zig");
 const parse_mo = @import("parse_mo.zig");
@@ -14,9 +15,9 @@ test {
 pub fn main(init: std.process.Init) !void {
     // const gpa = init.gpa;
     // const io = init.io;
-    const arena = init.arena.allocator();
-    const args_iterator = init.minimal.args.iterate();
-    var args = try zul.CommandLineArgs.parseFromIterator(arena, args_iterator);
+    // const arena = init.arena.allocator();
+    var args_iterator = init.minimal.args.iterate();
+    var args = try CommandLineArgs.parseFromIterator(init.arena, &args_iterator);
     defer args.deinit();
 
     if (args.contains("print_mo")) {

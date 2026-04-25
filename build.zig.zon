@@ -10,6 +10,10 @@
             .url = "https://github.com/karlseguin/zul/archive/776ba3b.tar.gz",
             .hash = "zul-0.0.0-1oDot4qXBwCHBYRdqx2aqkVPgcXiIOm9GXT5zLOCf_H3",
         },
+        .zig_collections = .{
+            .url = "https://github.com/insolor/zig-collections/archive/refs/tags/0.0.2.zip",
+            .hash = "zig_collections-0.0.2-x8AFrbgQAABBtWo0tbqjMf2i7F255VIDSrRxpFcsyBjO",
+        },
     },
 
     .paths = .{
