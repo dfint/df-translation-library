@@ -13,7 +13,7 @@ pub fn build(b: *std.Build) void {
             .target = target,
             .optimize = optimize,
             .imports = &.{
-                .{ .name = "df_translation_library", .module = df_translation_library.module("src") },
+                .{ .name = "df_translation_library", .module = df_translation_library.module("df_translation_library") },
             },
         }),
     });
