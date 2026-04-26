@@ -7,6 +7,10 @@
         .df_translation_library = .{
             .path = "..",
         },
+        .zig_cli = .{
+            .url = "https://codeberg.org/lodekeeper-z/zig-cli/archive/8e4bc24927.tar.gz",
+            .hash = "zig_cli-0.1.0-0yK2aE0tAQDP5xZ7_pYsMPhZ86gvKvM0d_QTyzWAajAy",
+        },
     },
     .paths = .{
         "build.zig",
