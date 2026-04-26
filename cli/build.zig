@@ -4,12 +4,17 @@ pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
 
+    const df_translation_library = b.dependency("df_translation_library", .{});
+
     const exe = b.addExecutable(.{
         .name = "cli",
         .root_module = b.createModule(.{
             .root_source_file = b.path("main.zig"),
             .target = target,
             .optimize = optimize,
+            .imports = &.{
+                .{ .name = "df_translation_library", .module = df_translation_library.module("src") },
+            },
         }),
     });
 
