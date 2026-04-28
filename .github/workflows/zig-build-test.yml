@@ -15,9 +15,6 @@ on:
       - '**/build.zig.zon'
       - '.github/**.yml'
 
-  schedule:
-    - cron: "0 0 * * Sat"
-
 jobs:
   test:
     runs-on: ubuntu-latest
