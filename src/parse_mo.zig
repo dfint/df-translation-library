@@ -74,15 +74,17 @@ const MoParser = struct {
     const MO_MAGIC_LE = "\xde\x12\x04\x95";
     const MO_MAGIC_BE = "\x95\x04\x12\xde";
 
-    file: std.fs.File,
+    io: std.Io,
+    file: std.Io.File,
     mo_header_info: MoHeaderInfo,
 
     const Self = @This();
 
-    pub fn init(file: std.fs.File) !Self {
+    pub fn init(io: std.Io, file: std.Io.File) !Self {
         return .{
+            .io = io,
             .file = file,
-            .mo_header_info = try Self.readHeader(file),
+            .mo_header_info = try Self.readHeader(io, file),
         };
     }
 
@@ -94,9 +96,9 @@ const MoParser = struct {
         } else return MoParserError.InvalidFormat;
     }
 
-    fn readHeader(file: std.fs.File) !MoHeaderInfo {
+    fn readHeader(io: std.Io, file: std.Io.File) !MoHeaderInfo {
         var buffer: [@max(@sizeOf(u32), MO_MAGIC_LE.len)]u8 = undefined;
-        var reader = file.reader(&buffer);
+        var reader = file.reader(io, &buffer);
         try reader.seekTo(0);
 
         const magic = try reader.interface.peek(MO_MAGIC_LE.len);
@@ -120,6 +122,7 @@ const MoParser = struct {
 
     pub fn iterateEntries(self: Self, allocator: std.mem.Allocator) !Iterator {
         return Iterator{
+            .io = self.io,
             .file = self.file,
             .mo_header_info = self.mo_header_info,
             .allocator = allocator,
@@ -127,9 +130,10 @@ const MoParser = struct {
     }
 
     const Iterator = struct {
+        io: std.Io,
         allocator: std.mem.Allocator,
         i: u32 = 0,
-        file: std.fs.File,
+        file: std.Io.File,
         mo_header_info: MoHeaderInfo,
         value: ?MoFileEntry = null,
 
@@ -165,7 +169,7 @@ const MoParser = struct {
 
         fn readString(self: *Iterator, table_offset: u32, index: u32) ![]const u8 {
             var buffer: [1024]u8 = undefined;
-            var reader = self.file.reader(&buffer);
+            var reader = self.file.reader(self.io, &buffer);
             try reader.seekTo(table_offset + index * STRING_TABLE_ENTRY_SIZE);
             const string_size = try reader.interface.takeInt(u32, self.mo_header_info.byteorder);
             const string_offset = try reader.interface.takeInt(u32, self.mo_header_info.byteorder);
@@ -177,8 +181,10 @@ const MoParser = struct {
 };
 
 test "MoParser" {
-    const file = try std.fs.cwd().openFile("test_data/test.mo", .{});
-    const parser = try MoParser.init(file);
+    const io = std.testing.io;
+    const cwd = std.Io.Dir.cwd();
+    const file = try cwd.openFile(io, "test_data/test.mo", .{});
+    const parser = try MoParser.init(io, file);
     const expected_number_of_strings: u32 = 5;
     try std.testing.expectEqual(expected_number_of_strings, parser.mo_header_info.number_of_strings);
 
@@ -194,11 +200,12 @@ test "MoParser" {
     try std.testing.expectEqual(expected_number_of_strings, i);
 }
 
-pub fn print_mo(mo_path: []const u8) !void {
-    const file = try std.fs.cwd().openFile(mo_path, .{});
-    defer file.close();
+pub fn print_mo(io: std.Io, mo_path: []const u8) !void {
+    const cwd = std.Io.Dir.cwd();
+    const file = try cwd.openFile(io, mo_path, .{});
+    defer file.close(io);
 
-    const parser = try MoParser.init(file);
+    const parser = try MoParser.init(io, file);
     const mo_header_info = parser.mo_header_info;
     std.debug.print("number of strings: {d}\n", .{mo_header_info.number_of_strings});
     std.debug.print("original string table offset: {d}\n", .{mo_header_info.original_string_table_offset});
@@ -232,9 +239,10 @@ const Dictionary = struct {
         };
     }
 
-    pub fn load(allocator: std.mem.Allocator, po_path: []const u8) !Dictionary {
-        const file = try std.fs.cwd().openFile(po_path, .{});
-        const parser = try MoParser.init(file);
+    pub fn load(io: std.Io, allocator: std.mem.Allocator, po_path: []const u8) !Dictionary {
+        const cwd = std.Io.Dir.cwd();
+        const file = try cwd.openFile(io, po_path, .{});
+        const parser = try MoParser.init(io, file);
         var dictionary = Dictionary.init(allocator);
         var iterator = try parser.iterateEntries(allocator);
         while (try iterator.next()) |entry| {
@@ -274,8 +282,9 @@ const Dictionary = struct {
 };
 
 test "load dictionary" {
+    const io = std.testing.io;
     const allocator = std.testing.allocator;
-    var dictionary = try Dictionary.load(allocator, "test_data/test.mo");
+    var dictionary = try Dictionary.load(io, allocator, "test_data/test.mo");
     defer dictionary.deinit();
     try std.testing.expectEqualStrings(
         "Translation 1",

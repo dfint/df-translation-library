@@ -1,10 +1,6 @@
 # Dwarf Fortress Translation Library
 
-[![Zig 0.15.2](https://img.shields.io/badge/Zig-0.15.2-orange)](https://github.com/ziglang/zig/releases/tag/0.15.2)
+[![Zig 0.16.0](https://img.shields.io/badge/Zig-0.16.0-orange)](https://ziglang.org/download/0.16.0/release-notes.html)
 [![zig build test](https://github.com/dfint/df-translation-library/actions/workflows/zig-build-test.yml/badge.svg)](https://github.com/dfint/df-translation-library/actions/workflows/zig-build-test.yml)
 
-Print contents of a mo file:
-
-```shell
-zig build run -- --print_mo=test_data/test.mo
-```
+- [CLI for the library](cli/README.md)

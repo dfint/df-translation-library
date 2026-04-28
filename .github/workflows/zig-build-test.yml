@@ -5,18 +5,15 @@ on:
     branches: [ "main" ]
     paths:
       - '**.zig'
-      - 'build.zig.zon'
+      - '**/build.zig.zon'
       - '.github/**.yml'
 
   pull_request:
     branches: [ "main" ]
     paths:
       - '**.zig'
-      - 'build.zig.zon'
+      - '**/build.zig.zon'
       - '.github/**.yml'
-
-  schedule:
-    - cron: "0 0 * * Sat"
 
 jobs:
   test:
@@ -25,7 +22,7 @@ jobs:
       fail-fast: false
       matrix:
         zig-version: 
-          - "0.15.2"
+          - "0.16.0"
           # - "master"
 
     name: Build and Test
@@ -40,7 +37,7 @@ jobs:
 
       - name: Install and run zlint
         run: |
-          curl -fsSL https://github.com/DonIsaac/zlint/releases/download/v0.7.9/zlint-linux-x86_64 > zlint
+          curl -fsSL https://github.com/DonIsaac/zlint/releases/download/v0.8.1/zlint-linux-x86_64 > zlint
           chmod +x zlint
           ./zlint --deny-warnings
 
@@ -48,4 +45,6 @@ jobs:
         run: zig build test
 
       - name: Check print_mo cli
-        run: zig build run -- --print_mo=test_data/test.mo
+        run: |
+          cd cli
+          zig build run -- print_mo --path=../test_data/test.mo

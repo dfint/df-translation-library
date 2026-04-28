@@ -1,5 +1,4 @@
 const std = @import("std");
-const zul = @import("zul");
 
 const TagPartsIterator = struct {
     raw: []const u8,
@@ -84,27 +83,27 @@ const StringTokenizer = struct {
 test "StringTokenizer" {
     var iter = StringTokenizer{ .raw = "   [TAG1:cd:de:fe]    [TAG2]a" };
 
-    try zul.testing.expectEqual(
+    try std.testing.expectEqualDeep(
         Token{ .text = "   ", .is_tag = false },
         iter.next().?,
     );
 
-    try zul.testing.expectEqual(
+    try std.testing.expectEqualDeep(
         Token{ .text = "[TAG1:cd:de:fe]", .is_tag = true },
         iter.next().?,
     );
 
-    try zul.testing.expectEqual(
+    try std.testing.expectEqualDeep(
         Token{ .text = "    ", .is_tag = false },
         iter.next().?,
     );
 
-    try zul.testing.expectEqual(
+    try std.testing.expectEqualDeep(
         Token{ .text = "[TAG2]", .is_tag = true },
         iter.next().?,
     );
 
-    try zul.testing.expectEqual(
+    try std.testing.expectEqualDeep(
         Token{ .text = "a", .is_tag = false },
         iter.next().?,
     );
@@ -122,53 +121,49 @@ test "StringTokenizer multiline" {
 
     var parser = StringTokenizer{ .raw = data };
 
-    try zul.testing.expectEqual(
+    try std.testing.expectEqualDeep(
         Token{ .text = "[TAG1:cd:de:fe]", .is_tag = true },
         parser.next().?,
     );
-    try zul.testing.expectEqual(
+    try std.testing.expectEqualDeep(
         Token{ .text = "\n", .is_tag = false },
         parser.next().?,
     );
-    try zul.testing.expectEqual(
+    try std.testing.expectEqualDeep(
         Token{ .text = "[TAG2]", .is_tag = true },
         parser.next().?,
     );
-    try zul.testing.expectEqual(
+    try std.testing.expectEqualDeep(
         Token{ .text = "a\n", .is_tag = false },
         parser.next().?,
     );
-    try zul.testing.expectEqual(
+    try std.testing.expectEqualDeep(
         Token{ .text = "[TAG3]", .is_tag = true },
         parser.next().?,
     );
-    try zul.testing.expectEqual(
+    try std.testing.expectEqualDeep(
         Token{ .text = "b\n", .is_tag = false },
         parser.next().?,
     );
-    try zul.testing.expectEqual(
+    try std.testing.expectEqualDeep(
         Token{ .text = "[TAG4]", .is_tag = true },
         parser.next().?,
     );
-    try zul.testing.expectEqual(
+    try std.testing.expectEqualDeep(
         Token{ .text = "c", .is_tag = false },
         parser.next().?,
     );
-    try std.testing.expectEqual(null, parser.next());
-}
-
-fn parseRawFile(allocator: std.mem.Allocator, file: std.fs.File) !StringTokenizer {
-    const raw = try file.readToEndAlloc(allocator, std.math.maxInt(usize));
-    return .{ .raw = raw };
+    try std.testing.expectEqualDeep(null, parser.next());
 }
 
 test "parse raw file" {
+    const io = std.testing.io;
     const allocator = std.testing.allocator;
     const file_path = "test_data/object_creature.txt";
-    const file = try std.fs.cwd().openFile(file_path, .{});
-    defer file.close();
+    const cwd = std.Io.Dir.cwd();
+    const file_contents = try cwd.readFileAlloc(io, file_path, allocator, .unlimited);
 
-    var iterator = try parseRawFile(allocator, file);
+    var iterator = StringTokenizer{ .raw = file_contents };
     defer allocator.free(iterator.raw);
     while (iterator.next()) |token| {
         if (token.is_tag) {

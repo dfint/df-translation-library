@@ -1,15 +1,17 @@
 const std = @import("std");
 
 const BackupManager = struct {
+    io: std.Io,
     allocator: std.mem.Allocator,
-    backup_dir: std.fs.Dir,
+    backup_dir: std.Io.Dir,
     source_filename: []const u8,
     backup_filename_buffer: std.ArrayList(u8),
 
     const Self = @This();
 
-    pub fn init(allocator: std.mem.Allocator, directory: std.fs.Dir, filename: []const u8) !Self {
+    pub fn init(io: std.Io, allocator: std.mem.Allocator, directory: std.Io.Dir, filename: []const u8) !Self {
         return .{
+            .io = io,
             .allocator = allocator,
             .source_filename = filename,
             .backup_dir = directory,
@@ -35,14 +37,16 @@ const BackupManager = struct {
 
     pub fn backup(self: Self) !void {
         self.backup_dir.access(
+            self.io,
             self.backup_filename_buffer.items,
-            .{ .mode = .read_only },
+            .{ .read = true },
         ) catch |err| switch (err) {
             error.FileNotFound => {
                 try self.backup_dir.copyFile(
                     self.source_filename,
                     self.backup_dir,
                     self.backup_filename_buffer.items,
+                    self.io,
                     .{},
                 );
             },
@@ -52,6 +56,7 @@ const BackupManager = struct {
 
     pub fn restore(self: Self) !void {
         _ = try self.backup_dir.updateFile(
+            self.io,
             self.backup_filename_buffer.items,
             self.backup_dir,
             self.source_filename,
@@ -60,7 +65,7 @@ const BackupManager = struct {
     }
 
     pub fn deleteBackup(self: Self) !void {
-        try self.backup_dir.deleteFile(self.backup_filename_buffer.items);
+        try self.backup_dir.deleteFile(self.io, self.backup_filename_buffer.items);
     }
 };
 
@@ -101,26 +106,32 @@ test "getFileNameStem" {
 }
 
 test "test backup" {
+    const io = std.testing.io;
+    const cwd = std.Io.Dir.cwd();
+
     const dir_name = "test_dir";
     const source_file_name = "file.txt";
     const file_contents = "Hello, world!";
 
-    std.fs.cwd().makeDir(dir_name) catch |err| switch (err) {
+    cwd.createDir(io, dir_name, .default_dir) catch |err| switch (err) {
         error.PathAlreadyExists => {}, // Ignore
         else => return err,
     };
 
-    const directory = try std.fs.cwd().openDir(dir_name, .{});
+    const directory = try cwd.openDir(io, dir_name, .{});
 
     {
-        const file = try directory.createFile(source_file_name, .{});
-        defer file.close();
-        try file.writeAll(file_contents);
+        const file = try directory.createFile(io, source_file_name, .{ .truncate = true });
+        defer file.close(io);
+
+        var writer = file.writer(io, &.{});
+        try writer.interface.writeAll(file_contents);
+        try writer.interface.flush();
     }
-    defer directory.deleteFile(source_file_name) catch unreachable;
+    defer directory.deleteFile(io, source_file_name) catch unreachable;
 
     const allocator = std.testing.allocator;
-    var backup_manager = try BackupManager.init(allocator, directory, source_file_name);
+    var backup_manager = try BackupManager.init(io, allocator, directory, source_file_name);
     defer {
         backup_manager.deleteBackup() catch unreachable;
         backup_manager.deinit();
@@ -131,25 +142,27 @@ test "test backup" {
     try backup_manager.backup();
 
     const actual_content = try directory.readFileAlloc(
-        allocator,
+        io,
         backup_file_name,
-        std.math.maxInt(usize),
+        allocator,
+        .unlimited,
     );
     defer allocator.free(actual_content);
 
     try std.testing.expectEqualStrings(file_contents, actual_content);
 
     {
-        const file = try directory.openFile(source_file_name, .{ .mode = .write_only });
-        defer file.close();
-        try file.writeAll("");
+        const file = try directory.openFile(io, source_file_name, .{ .mode = .write_only });
+        defer file.close(io);
+        try file.writeStreamingAll(io, "");
     }
 
     try backup_manager.restore();
     const restored_content = try directory.readFileAlloc(
-        allocator,
+        io,
         source_file_name,
-        std.math.maxInt(usize),
+        allocator,
+        .unlimited,
     );
     defer allocator.free(restored_content);
 
