@@ -1,8 +1,8 @@
 const std = @import("std");
 const testing = std.testing;
 
-const parse_raws = @import("parse_raws.zig");
-const parse_mo = @import("parse_mo.zig");
+pub const parse_raws = @import("parse_raws.zig");
+pub const parse_mo = @import("parse_mo.zig");
 const backup_manager = @import("backup_manager.zig");
 
 test {

@@ -2,9 +2,8 @@ const std = @import("std");
 const Io = std.Io;
 const argsParser = @import("zig_args");
 
-// const parse_raws = @import("parse_raws.zig");
-// const parse_mo = @import("parse_mo.zig");
-// const backup_manager = @import("backup_manager.zig");
+const df_translation_library = @import("df_translation_library");
+const parse_mo = df_translation_library.parse_mo;
 
 const Verbs = union(enum) {
     print_mo: struct {
@@ -32,25 +31,11 @@ pub fn main(init: std.process.Init) !void {
                 std.debug.print("print_mo\n", .{});
                 if (opts.path) |path| {
                     std.debug.print("path={s}\n", .{path});
+                    try parse_mo.print_mo(path);
                 }
             },
         }
     }
-
-    // if (args.contains("print_mo")) {
-    //     const print_mo_arg = args.get("print_mo") orelse {
-    //         std.debug.print("print_mo arg not found\n", .{});
-    //         return;
-    //     };
-
-    //     if (print_mo_arg.len == 0) {
-    //         std.debug.print("print_mo arg is empty\n", .{});
-    //         return;
-    //     }
-
-    //     std.debug.print("print_mo arg: {s}\n", .{print_mo_arg});
-    //     try parse_mo.print_mo(print_mo_arg);
-    // }
 
     try stdout_writer.flush(); // Don't forget to flush!
 }
