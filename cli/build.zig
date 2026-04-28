@@ -5,7 +5,7 @@ pub fn build(b: *std.Build) void {
     const optimize = b.standardOptimizeOption(.{});
 
     const df_translation_library = b.dependency("df_translation_library", .{});
-    const zig_cli = b.dependency("zig_cli", .{});
+    const zig_args = b.dependency("zig_args", .{ .target = target, .optimize = optimize });
 
     const exe = b.addExecutable(.{
         .name = "cli",
@@ -14,8 +14,11 @@ pub fn build(b: *std.Build) void {
             .target = target,
             .optimize = optimize,
             .imports = &.{
-                .{ .name = "df_translation_library", .module = df_translation_library.module("df_translation_library") },
-                .{ .name = "zig-cli", .module = zig_cli.module("zig-cli") },
+                .{
+                    .name = "df_translation_library",
+                    .module = df_translation_library.module("df_translation_library"),
+                },
+                .{ .name = "zig_args", .module = zig_args.module("args") },
             },
         }),
     });

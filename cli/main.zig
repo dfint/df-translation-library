@@ -1,60 +1,42 @@
 const std = @import("std");
 const Io = std.Io;
-const zig_cli = @import("zig-cli");
+const argsParser = @import("zig_args");
 
 // const parse_raws = @import("parse_raws.zig");
 // const parse_mo = @import("parse_mo.zig");
 // const backup_manager = @import("backup_manager.zig");
 
-const app_spec = zig_cli.app(.{
-    .name = "df_translation_library_cli",
-    .version = "0.0.0",
-    .description = "CLI for the DF Translation Library",
-    .commands = .{
-        .print_mo = zig_cli.command(.{
-            .description = "Print contents of mo file",
-            .options = .{
-                .file_path = zig_cli.option(
-                    []const u8,
-                    .{
-                        .long = "path",
-                        .short = 'p',
-                        .description = "MO file path",
-                        // .group = "api",
-                    },
-                    "file.mo",
-                ),
-            },
-        }),
-    },
-    .global_options = .{},
-});
+const Options = struct {
+    command: enum { print_mo, default } = .default,
+    file_path: ?[]const u8 = null,
+
+    pub const shorthands = .{
+        .p = "file_path",
+    };
+};
 
 pub fn main(init: std.process.Init) !void {
-    const arena: std.mem.Allocator = init.arena.allocator();
-
     const io = init.io;
 
     var stdout_buffer: [1024]u8 = undefined;
     var stdout_file_writer: Io.File.Writer = .init(.stdout(), io, &stdout_buffer);
     const stdout_writer = &stdout_file_writer.interface;
-    var args_iter = init.minimal.args.iterate();
-    const args = zig_cli.parseApp(app_spec, &args_iter, arena) catch |err| switch (err) {
-        error.HelpRequested, error.VersionRequested => std.process.exit(0),
-        else => std.process.exit(1),
-    };
 
-    switch (args) {
-        .print_mo => |opts| {
+    const options = try argsParser.parseForCurrentProcess(Options, init, .print);
+    defer options.deinit();
+    const opts = options.options;
+
+    switch (opts.command) {
+        .print_mo => {
             std.debug.print("print_mo\n", .{});
-            std.debug.print("file_path={s}\n", .{
-                opts.file_path,
-            });
+            if (opts.file_path) |file_path| {
+                std.debug.print("file_path={s}\n", .{file_path});
+            }
+        },
+        .default => {
+            std.debug.print("Unknown command\n", .{});
         },
     }
-
-    // var args_iterator = init.minimal.args.iterate();
-    // defer args.deinit();
 
     // if (args.contains("print_mo")) {
     //     const print_mo_arg = args.get("print_mo") orelse {

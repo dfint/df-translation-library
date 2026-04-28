@@ -7,9 +7,9 @@
         .df_translation_library = .{
             .path = "..",
         },
-        .zig_cli = .{
-            .url = "https://codeberg.org/lodekeeper-z/zig-cli/archive/8e4bc24927.tar.gz",
-            .hash = "zig_cli-0.1.0-0yK2aE0tAQDP5xZ7_pYsMPhZ86gvKvM0d_QTyzWAajAy",
+        .zig_args = .{
+            .url = "https://github.com/ikskuh/zig-args/archive/d47ae21768f9ec47c2a4154ab48b87166965b820.zip",
+            .hash = "args-0.0.0-CiLiqmvgAADyJmrzcQTP9IOYNvTzR_KGrg3ZNNsH2Qv0",
         },
     },
     .paths = .{
