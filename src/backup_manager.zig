@@ -2,13 +2,13 @@ const std = @import("std");
 
 const BackupManager = struct {
     allocator: std.mem.Allocator,
-    backup_dir: std.fs.Dir,
+    backup_dir: std.Io.Dir,
     source_filename: []const u8,
     backup_filename_buffer: std.ArrayList(u8),
 
     const Self = @This();
 
-    pub fn init(allocator: std.mem.Allocator, directory: std.fs.Dir, filename: []const u8) !Self {
+    pub fn init(allocator: std.mem.Allocator, directory: std.Io.Dir, filename: []const u8) !Self {
         return .{
             .allocator = allocator,
             .source_filename = filename,
@@ -120,7 +120,7 @@ test "test backup" {
         defer file.close(io);
         try file.writePositionalAll(io, file_contents, file_contents.len);
     }
-    defer directory.deleteFile(source_file_name) catch unreachable;
+    defer directory.deleteFile(io, source_file_name) catch unreachable;
 
     const allocator = std.testing.allocator;
     var backup_manager = try BackupManager.init(allocator, directory, source_file_name);

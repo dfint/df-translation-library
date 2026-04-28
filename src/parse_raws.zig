@@ -156,7 +156,7 @@ test "StringTokenizer multiline" {
     try std.testing.expectEqualDeep(null, parser.next());
 }
 
-fn parseRawFile(allocator: std.mem.Allocator, file: std.fs.File) !StringTokenizer {
+fn parseRawFile(allocator: std.mem.Allocator, file: std.Io.File) !StringTokenizer {
     const raw = try file.readToEndAlloc(allocator, std.math.maxInt(usize));
     return .{ .raw = raw };
 }

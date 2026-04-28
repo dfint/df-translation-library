@@ -74,12 +74,12 @@ const MoParser = struct {
     const MO_MAGIC_LE = "\xde\x12\x04\x95";
     const MO_MAGIC_BE = "\x95\x04\x12\xde";
 
-    file: std.fs.File,
+    file: std.Io.File,
     mo_header_info: MoHeaderInfo,
 
     const Self = @This();
 
-    pub fn init(file: std.fs.File) !Self {
+    pub fn init(file: std.Io.File) !Self {
         return .{
             .file = file,
             .mo_header_info = try Self.readHeader(file),
@@ -94,7 +94,7 @@ const MoParser = struct {
         } else return MoParserError.InvalidFormat;
     }
 
-    fn readHeader(file: std.fs.File) !MoHeaderInfo {
+    fn readHeader(file: std.Io.File) !MoHeaderInfo {
         var buffer: [@max(@sizeOf(u32), MO_MAGIC_LE.len)]u8 = undefined;
         var reader = file.reader(&buffer);
         try reader.seekTo(0);
@@ -129,7 +129,7 @@ const MoParser = struct {
     const Iterator = struct {
         allocator: std.mem.Allocator,
         i: u32 = 0,
-        file: std.fs.File,
+        file: std.Io.File,
         mo_header_info: MoHeaderInfo,
         value: ?MoFileEntry = null,
 
