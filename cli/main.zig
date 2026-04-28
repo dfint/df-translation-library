@@ -6,13 +6,14 @@ const argsParser = @import("zig_args");
 // const parse_mo = @import("parse_mo.zig");
 // const backup_manager = @import("backup_manager.zig");
 
-const Options = struct {
-    command: enum { print_mo, default } = .default,
-    file_path: ?[]const u8 = null,
+const Verbs = union(enum) {
+    print_mo: struct {
+        path: ?[]const u8 = null,
 
-    pub const shorthands = .{
-        .p = "file_path",
-    };
+        pub const shorthands = .{
+            .p = "path",
+        };
+    },
 };
 
 pub fn main(init: std.process.Init) !void {
@@ -22,20 +23,18 @@ pub fn main(init: std.process.Init) !void {
     var stdout_file_writer: Io.File.Writer = .init(.stdout(), io, &stdout_buffer);
     const stdout_writer = &stdout_file_writer.interface;
 
-    const options = try argsParser.parseForCurrentProcess(Options, init, .print);
+    const options = try argsParser.parseWithVerbForCurrentProcess(struct {}, Verbs, init, .print);
     defer options.deinit();
-    const opts = options.options;
 
-    switch (opts.command) {
-        .print_mo => {
-            std.debug.print("print_mo\n", .{});
-            if (opts.file_path) |file_path| {
-                std.debug.print("file_path={s}\n", .{file_path});
-            }
-        },
-        .default => {
-            std.debug.print("Unknown command\n", .{});
-        },
+    if (options.verb) |verb| {
+        switch (verb) {
+            .print_mo => |opts| {
+                std.debug.print("print_mo\n", .{});
+                if (opts.path) |path| {
+                    std.debug.print("path={s}\n", .{path});
+                }
+            },
+        }
     }
 
     // if (args.contains("print_mo")) {
