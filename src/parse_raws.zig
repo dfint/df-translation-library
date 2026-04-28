@@ -156,19 +156,14 @@ test "StringTokenizer multiline" {
     try std.testing.expectEqualDeep(null, parser.next());
 }
 
-fn parseRawFile(allocator: std.mem.Allocator, file: std.Io.File) !StringTokenizer {
-    const raw = try file.readToEndAlloc(allocator, std.math.maxInt(usize));
-    return .{ .raw = raw };
-}
-
 test "parse raw file" {
+    const io = std.testing.io;
     const allocator = std.testing.allocator;
     const file_path = "test_data/object_creature.txt";
     const cwd = std.Io.Dir.cwd();
-    const file = try cwd.openFile(file_path, .{});
-    defer file.close();
+    const file_contents = try cwd.readFileAlloc(io, file_path, allocator, .unlimited);
 
-    var iterator = try parseRawFile(allocator, file);
+    var iterator = StringTokenizer{ .raw = file_contents };
     defer allocator.free(iterator.raw);
     while (iterator.next()) |token| {
         if (token.is_tag) {
