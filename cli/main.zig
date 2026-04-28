@@ -31,7 +31,7 @@ pub fn main(init: std.process.Init) !void {
                 std.debug.print("print_mo\n", .{});
                 if (opts.path) |path| {
                     std.debug.print("path={s}\n", .{path});
-                    try parse_mo.print_mo(path);
+                    try parse_mo.print_mo(io, path);
                 }
             },
         }

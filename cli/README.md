@@ -5,5 +5,5 @@ Run commands from the cli directory.
 Print contents of a mo file:
 
 ```shell
-zig build run -- print_mo --path test_data/test.mo
+zig build run -- print_mo --path ../test_data/test.mo
 ```

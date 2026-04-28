@@ -200,12 +200,12 @@ test "MoParser" {
     try std.testing.expectEqual(expected_number_of_strings, i);
 }
 
-pub fn print_mo(mo_path: []const u8) !void {
+pub fn print_mo(io: std.Io, mo_path: []const u8) !void {
     const cwd = std.Io.Dir.cwd();
-    const file = try cwd.openFile(mo_path, .{});
-    defer file.close();
+    const file = try cwd.openFile(io, mo_path, .{});
+    defer file.close(io);
 
-    const parser = try MoParser.init(file);
+    const parser = try MoParser.init(io, file);
     const mo_header_info = parser.mo_header_info;
     std.debug.print("number of strings: {d}\n", .{mo_header_info.number_of_strings});
     std.debug.print("original string table offset: {d}\n", .{mo_header_info.original_string_table_offset});
