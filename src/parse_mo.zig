@@ -177,8 +177,9 @@ const MoParser = struct {
 };
 
 test "MoParser" {
+    const io = std.testing.io;
     const cwd = std.Io.Dir.cwd();
-    const file = try cwd.openFile("test_data/test.mo", .{});
+    const file = try cwd.openFile(io, "test_data/test.mo", .{});
     const parser = try MoParser.init(file);
     const expected_number_of_strings: u32 = 5;
     try std.testing.expectEqual(expected_number_of_strings, parser.mo_header_info.number_of_strings);
