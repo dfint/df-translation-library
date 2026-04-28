@@ -101,16 +101,19 @@ test "getFileNameStem" {
 }
 
 test "test backup" {
+    // const io = std.testing.io;
+    const cwd = std.Io.Dir.cwd();
+
     const dir_name = "test_dir";
     const source_file_name = "file.txt";
     const file_contents = "Hello, world!";
 
-    std.fs.cwd().makeDir(dir_name) catch |err| switch (err) {
+    cwd.makeDir(dir_name) catch |err| switch (err) {
         error.PathAlreadyExists => {}, // Ignore
         else => return err,
     };
 
-    const directory = try std.fs.cwd().openDir(dir_name, .{});
+    const directory = try cwd.openDir(dir_name, .{});
 
     {
         const file = try directory.createFile(source_file_name, .{});

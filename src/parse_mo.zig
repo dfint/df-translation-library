@@ -177,7 +177,8 @@ const MoParser = struct {
 };
 
 test "MoParser" {
-    const file = try std.fs.cwd().openFile("test_data/test.mo", .{});
+    const cwd = std.Io.Dir.cwd();
+    const file = try cwd.openFile("test_data/test.mo", .{});
     const parser = try MoParser.init(file);
     const expected_number_of_strings: u32 = 5;
     try std.testing.expectEqual(expected_number_of_strings, parser.mo_header_info.number_of_strings);
@@ -195,7 +196,8 @@ test "MoParser" {
 }
 
 pub fn print_mo(mo_path: []const u8) !void {
-    const file = try std.fs.cwd().openFile(mo_path, .{});
+    const cwd = std.Io.Dir.cwd();
+    const file = try cwd.openFile(mo_path, .{});
     defer file.close();
 
     const parser = try MoParser.init(file);
@@ -233,7 +235,8 @@ const Dictionary = struct {
     }
 
     pub fn load(allocator: std.mem.Allocator, po_path: []const u8) !Dictionary {
-        const file = try std.fs.cwd().openFile(po_path, .{});
+        const cwd = std.Io.Dir.cwd();
+        const file = try cwd.openFile(po_path, .{});
         const parser = try MoParser.init(file);
         var dictionary = Dictionary.init(allocator);
         var iterator = try parser.iterateEntries(allocator);

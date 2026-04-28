@@ -164,7 +164,8 @@ fn parseRawFile(allocator: std.mem.Allocator, file: std.fs.File) !StringTokenize
 test "parse raw file" {
     const allocator = std.testing.allocator;
     const file_path = "test_data/object_creature.txt";
-    const file = try std.fs.cwd().openFile(file_path, .{});
+    const cwd = std.Io.Dir.cwd();
+    const file = try cwd.openFile(file_path, .{});
     defer file.close();
 
     var iterator = try parseRawFile(allocator, file);
