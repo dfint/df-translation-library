@@ -121,9 +121,12 @@ test "test backup" {
     const directory = try cwd.openDir(io, dir_name, .{});
 
     {
-        const file = try directory.createFile(io, source_file_name, .{});
+        const file = try directory.createFile(io, source_file_name, .{ .truncate = true });
         defer file.close(io);
-        try file.writePositionalAll(io, file_contents, file_contents.len);
+
+        var writer = file.writer(io, &.{});
+        try writer.interface.writeAll(file_contents);
+        try writer.interface.flush();
     }
     defer directory.deleteFile(io, source_file_name) catch unreachable;
 
