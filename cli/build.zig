@@ -3,9 +3,10 @@ const std = @import("std");
 pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
+    const options = .{ .target = target, .optimize = optimize };
 
-    const df_translation_library = b.dependency("df_translation_library", .{});
-    const zig_args = b.dependency("zig_args", .{ .target = target, .optimize = optimize });
+    const df_translation_library = b.dependency("df_translation_library", options);
+    const zig_args = b.dependency("zig_args", options);
 
     const exe = b.addExecutable(.{
         .name = "df_translation_library_cli",
