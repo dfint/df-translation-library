@@ -2,6 +2,56 @@ const std = @import("std");
 
 const parse_mo = @import("parse_mo.zig");
 
+/// Interner for strings stored in dictionary keys.
+const StringInterner = struct {
+    map: std.StringHashMap(void),
+    allocator: std.mem.Allocator,
+
+    const Self = @This();
+
+    /// Initialize interner.
+    pub fn init(allocator: std.mem.Allocator) Self {
+        return .{
+            .map = std.StringHashMap(void).init(allocator),
+            .allocator = allocator,
+        };
+    }
+
+    /// Deininialize interner.
+    pub fn deinit(self: *Self) void {
+        var it = self.map.keyIterator();
+        while (it.next()) |key| {
+            self.allocator.free(key.*);
+        }
+        self.map.deinit();
+    }
+
+    /// Create a copy of a string if it has not been stored in the internal map yet,
+    /// otherwise return exisitng string copy from the map.
+    pub fn intern(self: *Self, string: []const u8) ![]const u8 {
+        if (self.map.getKey(string)) |existing| {
+            return existing;
+        }
+
+        const copy = try self.allocator.dupe(u8, string);
+        try self.map.put(copy, {});
+        return copy;
+    }
+};
+
+test "Interner" {
+    const allocator = std.testing.allocator;
+    var interner = StringInterner.init(allocator);
+    defer interner.deinit();
+
+    const test_string: []const u8 = "test1";
+    const interned_string1 = try interner.intern(test_string);
+    try std.testing.expectEqualStrings(test_string, interned_string1);
+    try std.testing.expect(test_string.ptr != interned_string1.ptr);
+    const interned_string2 = try interner.intern(test_string);
+    try std.testing.expect(interned_string1.ptr == interned_string2.ptr);
+}
+
 pub const DictionaryEntry = struct {
     key: Key,
     translation_string: []const u8,
@@ -9,20 +59,6 @@ pub const DictionaryEntry = struct {
     pub const Key = struct {
         original_string: []const u8,
         context: ?[]const u8 = null,
-
-        pub fn clone(self: @This(), allocator: std.mem.Allocator) !@This() {
-            return .{
-                .original_string = try allocator.dupe(u8, self.original_string),
-                .context = if (self.context) |cont| try allocator.dupe(u8, cont) else null,
-            };
-        }
-
-        pub fn free(self: @This(), allocator: std.mem.Allocator) void {
-            allocator.free(self.original_string);
-            if (self.context) |context| {
-                allocator.free(context);
-            }
-        }
     };
 };
 
@@ -60,6 +96,7 @@ const HashingContext = struct {
 pub const Dictionary = struct {
     allocator: std.mem.Allocator,
     entries: std.HashMap(DictionaryEntry.Key, []const u8, HashingContext, 80),
+    interner: StringInterner,
 
     /// Initialize dictionary.
     fn init(allocator: std.mem.Allocator) Dictionary {
@@ -71,6 +108,7 @@ pub const Dictionary = struct {
                 HashingContext,
                 80,
             ).init(allocator),
+            .interner = .init(allocator),
         };
     }
 
@@ -86,18 +124,18 @@ pub const Dictionary = struct {
 
     /// Deinitialize dictionary.
     pub fn deinit(self: *Dictionary) void {
-        var items = self.entries.iterator();
-        while (items.next()) |item| {
-            item.key_ptr.*.free(self.allocator);
-            self.allocator.free(item.value_ptr.*);
-        }
+        self.interner.deinit();
         self.entries.deinit();
     }
 
     /// Put an entry into the dictionary.
-    pub fn put(self: *Dictionary, mo_file_entry: DictionaryEntry) !void {
-        const value = try self.allocator.dupe(u8, mo_file_entry.translation_string);
-        try self.entries.put(try mo_file_entry.key.clone(self.allocator), value);
+    pub fn put(self: *Dictionary, dictionary_entry: DictionaryEntry) !void {
+        const value = try self.interner.intern(dictionary_entry.translation_string);
+        const key = DictionaryEntry.Key{
+            .original_string = try self.interner.intern(dictionary_entry.key.original_string),
+            .context = if (dictionary_entry.key.context) |ctx| try self.interner.intern(ctx) else null,
+        };
+        try self.entries.put(key, value);
     }
 
     /// Get translation by original string and context.
@@ -118,7 +156,7 @@ test "try put the same key twice" {
         .translation_string = "translation",
     };
     try dictionary.put(entry);
-    try dictionary.put(entry);  // Can cause a memory leak
+    try dictionary.put(entry); // Can cause a memory leak
 }
 
 test "load dictionary from mo" {
