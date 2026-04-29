@@ -23,8 +23,8 @@ pub fn print_mo(io: std.Io, allocator: std.mem.Allocator, mo_path: []const u8) !
         // defer entry.deinit(allocator);
 
         std.debug.print("context: {s}\noriginal: {s}\ntranslation: {s}\n\n", .{
-            entry.context orelse "NULL",
-            entry.original_string,
+            entry.key.context orelse "NULL",
+            entry.key.original_string,
             entry.translation_string,
         });
     }
