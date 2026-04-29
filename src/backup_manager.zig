@@ -70,7 +70,7 @@ const BackupManager = struct {
             .{},
         );
     }
-    
+
     /// Delete backup file. Dangerous, don't use it in production code.
     fn deleteBackup(self: Self) !void {
         try self.backup_dir.deleteFile(self.io, self.backup_filename_buffer.items);
