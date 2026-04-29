@@ -8,7 +8,7 @@ pub fn build(b: *std.Build) void {
     const zig_args = b.dependency("zig_args", .{ .target = target, .optimize = optimize });
 
     const exe = b.addExecutable(.{
-        .name = "cli",
+        .name = "df_translation_library_cli",
         .root_module = b.createModule(.{
             .root_source_file = b.path("src/main.zig"),
             .target = target,
