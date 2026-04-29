@@ -9,6 +9,7 @@ const MoParserError = error{
 
 const CONTEXT_SEPARATOR: []const u8 = "\x04";
 
+/// Structure, which describes an entry of a MO file.
 const MoFileEntry = struct {
     original_string: []const u8,
     context: ?[]const u8 = null,
@@ -18,6 +19,7 @@ const MoFileEntry = struct {
 
     const Self = @This();
 
+    /// Initialize the structure.
     pub fn init(original_string: []const u8, translation_string: []const u8) Self {
         var self: Self = .{
             .original_string = original_string,
@@ -29,6 +31,7 @@ const MoFileEntry = struct {
         return self;
     }
 
+    /// Extract context name from the original string.
     fn extractContext(self: *Self) void {
         if (std.mem.indexOf(u8, self.original_string, CONTEXT_SEPARATOR)) |index| {
             self.context = self.original_string[0..index];
@@ -38,6 +41,7 @@ const MoFileEntry = struct {
         }
     }
 
+    /// Deinitialize the structure.
     pub fn deinit(self: Self, allocator: std.mem.Allocator) void {
         allocator.free(self._full_original_string);
         allocator.free(self.translation_string);
@@ -70,7 +74,8 @@ test "MoFileEntry with allocation" {
     try std.testing.expectEqualStrings("context\x04original string", mo_entry._full_original_string);
 }
 
-const MoParser = struct {
+/// Parser of MO files.
+pub const MoParser = struct {
     const MO_MAGIC_LE = "\xde\x12\x04\x95";
     const MO_MAGIC_BE = "\x95\x04\x12\xde";
 
@@ -80,6 +85,7 @@ const MoParser = struct {
 
     const Self = @This();
 
+    /// Initialize the parser.
     pub fn init(io: std.Io, file: std.Io.File) !Self {
         return .{
             .io = io,
@@ -88,6 +94,7 @@ const MoParser = struct {
         };
     }
 
+    /// Determine byte order by the magic number in the file header.
     fn getByteorder(magic: []u8) MoParserError!std.builtin.Endian {
         if (std.mem.eql(u8, magic, MO_MAGIC_LE)) {
             return .little;
@@ -96,6 +103,7 @@ const MoParser = struct {
         } else return MoParserError.InvalidFormat;
     }
 
+    /// Read the file header
     fn readHeader(io: std.Io, file: std.Io.File) !MoHeaderInfo {
         var buffer: [@max(@sizeOf(u32), MO_MAGIC_LE.len)]u8 = undefined;
         var reader = file.reader(io, &buffer);
@@ -113,6 +121,7 @@ const MoParser = struct {
         };
     }
 
+    /// Structure, which describes MO file header.
     const MoHeaderInfo = struct {
         byteorder: std.builtin.Endian,
         number_of_strings: u32,
@@ -120,6 +129,7 @@ const MoParser = struct {
         translation_string_table_offset: u32,
     };
 
+    /// Get iterator over MO file entries.
     pub fn iterateEntries(self: Self, allocator: std.mem.Allocator) !Iterator {
         return Iterator{
             .io = self.io,
@@ -129,6 +139,7 @@ const MoParser = struct {
         };
     }
 
+    /// Iterator over MO file entries.
     const Iterator = struct {
         io: std.Io,
         allocator: std.mem.Allocator,
@@ -137,6 +148,7 @@ const MoParser = struct {
         mo_header_info: MoHeaderInfo,
         value: ?MoFileEntry = null,
 
+        /// Deinitialize the iterator.
         /// .deinit() of the iterator must be called only if the iterator was not exhausted
         pub fn deinit(self: *Iterator) void {
             if (self.value) |value| {
@@ -145,6 +157,7 @@ const MoParser = struct {
             }
         }
 
+        /// Get the next file entry.
         pub fn next(self: *Iterator) !?MoFileEntry {
             if (self.value) |value| {
                 value.deinit(self.allocator);
@@ -167,6 +180,7 @@ const MoParser = struct {
 
         const STRING_TABLE_ENTRY_SIZE = 8;
 
+        /// Read string from the file by table offset and string index.
         fn readString(self: *Iterator, table_offset: u32, index: u32) ![]const u8 {
             var buffer: [1024]u8 = undefined;
             var reader = self.file.reader(self.io, &buffer);
@@ -200,38 +214,12 @@ test "MoParser" {
     try std.testing.expectEqual(expected_number_of_strings, i);
 }
 
-pub fn print_mo(io: std.Io, mo_path: []const u8) !void {
-    const cwd = std.Io.Dir.cwd();
-    const file = try cwd.openFile(io, mo_path, .{});
-    defer file.close(io);
-
-    const parser = try MoParser.init(io, file);
-    const mo_header_info = parser.mo_header_info;
-    std.debug.print("number of strings: {d}\n", .{mo_header_info.number_of_strings});
-    std.debug.print("original string table offset: {d}\n", .{mo_header_info.original_string_table_offset});
-    std.debug.print(
-        "translation string table offset: {d}\n\n",
-        .{mo_header_info.translation_string_table_offset},
-    );
-
-    var debug_allocator = std.heap.DebugAllocator(.{}){};
-    const allocator = debug_allocator.allocator();
-    var iterator = try parser.iterateEntries(allocator);
-    while (try iterator.next()) |entry| {
-        // defer entry.deinit(allocator);
-
-        std.debug.print("context: {s}\noriginal: {s}\ntranslation: {s}\n\n", .{
-            entry.context orelse "NULL",
-            entry.original_string,
-            entry.translation_string,
-        });
-    }
-}
-
+/// Dictionary container structure.
 const Dictionary = struct {
     allocator: std.mem.Allocator,
     entries: std.StringHashMap([]const u8),
 
+    /// Initialize dictionary.
     fn init(allocator: std.mem.Allocator) Dictionary {
         return Dictionary{
             .allocator = allocator,
@@ -239,6 +227,7 @@ const Dictionary = struct {
         };
     }
 
+    /// Load dictionary from MO file. TODO: add parser parameter to make the dictionary independent from file format.
     pub fn load(io: std.Io, allocator: std.mem.Allocator, po_path: []const u8) !Dictionary {
         const cwd = std.Io.Dir.cwd();
         const file = try cwd.openFile(io, po_path, .{});
@@ -252,6 +241,7 @@ const Dictionary = struct {
         return dictionary;
     }
 
+    /// Deinitialize dictionary.
     pub fn deinit(self: *Dictionary) void {
         var items = self.entries.iterator();
         while (items.next()) |item| {
@@ -261,12 +251,14 @@ const Dictionary = struct {
         self.entries.deinit();
     }
 
+    /// Put an entry into the dictionary.
     pub fn put(self: *Dictionary, mo_file_entry: MoFileEntry) !void {
         const key = try self.allocator.dupe(u8, mo_file_entry._full_original_string);
         const value = try self.allocator.dupe(u8, mo_file_entry.translation_string);
         try self.entries.put(key, value);
     }
 
+    /// Get translation by original string and context.
     pub fn get(self: Dictionary, context: ?[]const u8, original_string: []const u8) !?[]const u8 {
         var buffer = std.ArrayList(u8).empty;
         defer buffer.deinit(self.allocator);
