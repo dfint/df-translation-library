@@ -1,5 +1,6 @@
 const std = @import("std");
 
+/// Backup manager: creates a backup of a file in the current directory, can restore file contents from backup.
 const BackupManager = struct {
     io: std.Io,
     allocator: std.mem.Allocator,
@@ -9,6 +10,7 @@ const BackupManager = struct {
 
     const Self = @This();
 
+    /// Initialize backup manager
     pub fn init(io: std.Io, allocator: std.mem.Allocator, directory: std.Io.Dir, filename: []const u8) !Self {
         return .{
             .io = io,
@@ -19,10 +21,12 @@ const BackupManager = struct {
         };
     }
 
+    /// Deinitialize backup manager.
     pub fn deinit(self: *Self) void {
         self.backup_filename_buffer.deinit(self.allocator);
     }
 
+    /// Get backup file name from a file name (e.g. "file_name.txt" -> "file_name.bak").
     fn getBackupFileName(allocator: std.mem.Allocator, file_name: []const u8) !std.ArrayList(u8) {
         var backup_file_name: std.ArrayList(u8) = .empty;
         try backup_file_name.appendSlice(allocator, Self.getFileNameStem(file_name));
@@ -30,11 +34,13 @@ const BackupManager = struct {
         return backup_file_name;
     }
 
+    /// Remove extension from a file name. Only last extension is removed (split by the last "." character).
     fn getFileNameStem(file_name: []const u8) []const u8 {
         const last_dot_index = std.mem.lastIndexOf(u8, file_name, ".") orelse file_name.len;
         return if (last_dot_index > 0) file_name[0..last_dot_index] else file_name;
     }
 
+    /// Create backup of a file.
     pub fn backup(self: Self) !void {
         self.backup_dir.access(
             self.io,
@@ -54,6 +60,7 @@ const BackupManager = struct {
         };
     }
 
+    /// Restore file from backup.
     pub fn restore(self: Self) !void {
         _ = try self.backup_dir.updateFile(
             self.io,
@@ -63,8 +70,9 @@ const BackupManager = struct {
             .{},
         );
     }
-
-    pub fn deleteBackup(self: Self) !void {
+    
+    /// Delete backup file. Dangerous, don't use it in production code.
+    fn deleteBackup(self: Self) !void {
         try self.backup_dir.deleteFile(self.io, self.backup_filename_buffer.items);
     }
 };
