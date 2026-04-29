@@ -1,9 +1,11 @@
 const std = @import("std");
 
+/// Iterator over tag parts: [abc:cde:fgh] -> "abc", "cde", "fgh"
 const TagPartsIterator = struct {
     raw: []const u8,
     pos: usize = 0,
 
+    /// Get the next value from the iterator
     pub fn next(self: *TagPartsIterator) ?[]const u8 {
         if (self.pos >= self.raw.len) {
             return null;
@@ -36,15 +38,18 @@ test "TagPartsIterator" {
     try std.testing.expectEqual(null, iter.next());
 }
 
+/// Token structure.
 const Token = struct {
     text: []const u8,
     is_tag: bool,
 };
 
+/// Tokenizer of raw file contents.
 const StringTokenizer = struct {
     raw: []const u8,
     pos: usize = 0,
 
+    /// Get the next token from a raw file.
     pub fn next(self: *StringTokenizer) ?Token {
         if (self.pos >= self.raw.len) {
             return null;
