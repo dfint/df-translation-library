@@ -109,6 +109,18 @@ pub const Dictionary = struct {
     }
 };
 
+test "try put the same key twice" {
+    const allocator = std.testing.allocator;
+    var dictionary = Dictionary.init(allocator);
+    defer dictionary.deinit();
+    const entry = DictionaryEntry{
+        .key = .{ .original_string = "original string", .context = "context" },
+        .translation_string = "translation",
+    };
+    try dictionary.put(entry);
+    try dictionary.put(entry);  // Can cause a memory leak
+}
+
 test "load dictionary from mo" {
     const io = std.testing.io;
     const allocator = std.testing.allocator;
