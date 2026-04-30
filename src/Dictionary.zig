@@ -1,17 +1,19 @@
+//! Dictionary container structure.
+
 const std = @import("std");
 
 const parse_mo = @import("parse_mo.zig");
 const StringInterner = @import("StringInterner.zig");
 
+/// Key of the Dictionary
 pub const DictionaryKey = struct {
     original_string: []const u8,
     context: ?[]const u8 = null,
 };
 
+/// Hashing context is necessary to make it possible to use DictionaryKey as a key of HashMap.
 const HashingContext = struct {
-    const Self = @This();
-
-    pub fn hash(_: Self, key: DictionaryKey) u64 {
+    pub fn hash(_: HashingContext, key: DictionaryKey) u64 {
         var hasher = std.hash.Wyhash.init(0);
 
         // hash original_string string
@@ -28,7 +30,7 @@ const HashingContext = struct {
         return hasher.final();
     }
 
-    pub fn eql(_: Self, a: DictionaryKey, b: DictionaryKey) bool {
+    pub fn eql(_: HashingContext, a: DictionaryKey, b: DictionaryKey) bool {
         if (!std.mem.eql(u8, a.original_string, b.original_string)) return false;
 
         if (a.context == null and b.context == null) return true;
@@ -38,63 +40,62 @@ const HashingContext = struct {
     }
 };
 
-/// Dictionary container structure.
-pub const Dictionary = struct {
-    allocator: std.mem.Allocator,
-    entries: std.HashMap(DictionaryKey, []const u8, HashingContext, 80),
-    interner: StringInterner,
+allocator: std.mem.Allocator,
+entries: std.HashMap(DictionaryKey, []const u8, HashingContext, 80),
+interner: StringInterner,
 
-    /// Initialize dictionary.
-    fn init(allocator: std.mem.Allocator) Dictionary {
-        return Dictionary{
-            .allocator = allocator,
-            .entries = std.HashMap(
-                DictionaryKey,
-                []const u8,
-                HashingContext,
-                80,
-            ).init(allocator),
-            .interner = .init(allocator),
-        };
-    }
+const Self = @This();
 
-    /// Populate dictionary from iterator
-    pub fn loadFromIterator(allocator: std.mem.Allocator, iterator: anytype) !Dictionary {
-        var dictionary = Dictionary.init(allocator);
-        while (try iterator.next()) |entry| {
-            const key: DictionaryKey = entry[0];
-            const value: []const u8 = entry[1];
-            if (key.original_string.len == 0) continue;
-            try dictionary.put(key, value);
-        }
-        return dictionary;
-    }
+/// Initialize dictionary.
+fn init(allocator: std.mem.Allocator) Self {
+    return .{
+        .allocator = allocator,
+        .entries = std.HashMap(
+            DictionaryKey,
+            []const u8,
+            HashingContext,
+            80,
+        ).init(allocator),
+        .interner = .init(allocator),
+    };
+}
 
-    /// Deinitialize dictionary.
-    pub fn deinit(self: *Dictionary) void {
-        self.interner.deinit();
-        self.entries.deinit();
+/// Populate dictionary from iterator
+pub fn loadFromIterator(allocator: std.mem.Allocator, iterator: anytype) !Self {
+    var dictionary = Self.init(allocator);
+    while (try iterator.next()) |entry| {
+        const key: DictionaryKey = entry[0];
+        const value: []const u8 = entry[1];
+        if (key.original_string.len == 0) continue;
+        try dictionary.put(key, value);
     }
+    return dictionary;
+}
 
-    /// Put an entry into the dictionary.
-    pub fn put(self: *Dictionary, key: DictionaryKey, value: []const u8) !void {
-        const new_value = try self.interner.intern(value);
-        const new_key = DictionaryKey{
-            .original_string = try self.interner.intern(key.original_string),
-            .context = if (key.context) |ctx| try self.interner.intern(ctx) else null,
-        };
-        try self.entries.put(new_key, new_value);
-    }
+/// Deinitialize dictionary.
+pub fn deinit(self: *Self) void {
+    self.interner.deinit();
+    self.entries.deinit();
+}
 
-    /// Get translation by original string and context.
-    pub fn get(self: Dictionary, key: DictionaryKey) !?[]const u8 {
-        return self.entries.get(key);
-    }
-};
+/// Put an entry into the dictionary.
+pub fn put(self: *Self, key: DictionaryKey, value: []const u8) !void {
+    const new_value = try self.interner.intern(value);
+    const new_key = DictionaryKey{
+        .original_string = try self.interner.intern(key.original_string),
+        .context = if (key.context) |ctx| try self.interner.intern(ctx) else null,
+    };
+    try self.entries.put(new_key, new_value);
+}
+
+/// Get translation by original string and context.
+pub fn get(self: Self, key: DictionaryKey) !?[]const u8 {
+    return self.entries.get(key);
+}
 
 test "simple dictionary put and get" {
     const allocator = std.testing.allocator;
-    var dictionary = Dictionary.init(allocator);
+    var dictionary = Self.init(allocator);
     defer dictionary.deinit();
     const key = DictionaryKey{
         .original_string = "original string",
@@ -111,7 +112,7 @@ test "simple dictionary put and get" {
 
 test "simple dictionary put and get with null context" {
     const allocator = std.testing.allocator;
-    var dictionary = Dictionary.init(allocator);
+    var dictionary = Self.init(allocator);
     defer dictionary.deinit();
     const key = DictionaryKey{
         .original_string = "original string",
@@ -128,7 +129,7 @@ test "simple dictionary put and get with null context" {
 
 test "simple dictionary get with no value" {
     const allocator = std.testing.allocator;
-    var dictionary = Dictionary.init(allocator);
+    var dictionary = Self.init(allocator);
     defer dictionary.deinit();
     const key = DictionaryKey{
         .original_string = "original string",
@@ -143,7 +144,7 @@ test "simple dictionary get with no value" {
 
 test "try put the same key twice" {
     const allocator = std.testing.allocator;
-    var dictionary = Dictionary.init(allocator);
+    var dictionary = Self.init(allocator);
     defer dictionary.deinit();
 
     const key = DictionaryKey{
@@ -164,7 +165,7 @@ test "load dictionary from mo" {
     const parser = try parse_mo.MoParser.init(io, file);
     var iterator = try parser.iterateEntries(allocator);
 
-    var dictionary = try Dictionary.loadFromIterator(allocator, &iterator);
+    var dictionary = try Self.loadFromIterator(allocator, &iterator);
     defer dictionary.deinit();
 
     try std.testing.expectEqualStrings(

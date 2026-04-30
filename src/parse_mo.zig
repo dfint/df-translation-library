@@ -3,8 +3,8 @@
 //! Format description: https://www.gnu.org/software/gettext/manual/html_node/MO-Files.html
 const std = @import("std");
 
-const dictionary = @import("dictionary.zig");
-const DictionaryKey = dictionary.DictionaryKey;
+const Dictionary = @import("Dictionary.zig");
+const DictionaryKey = Dictionary.DictionaryKey;
 
 const MoParserError = error{
     InvalidFormat,
