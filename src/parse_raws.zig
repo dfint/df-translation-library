@@ -1,5 +1,7 @@
 const std = @import("std");
 
+const utils = @import("utils.zig");
+
 /// Iterator over tag parts: [abc:cde:fgh] -> "abc", "cde", "fgh"
 const TagPartsIterator = struct {
     raw: []const u8,
@@ -30,12 +32,15 @@ const TagPartsIterator = struct {
 };
 
 test "TagPartsIterator" {
-    var iter = TagPartsIterator{ .raw = "[ab:cd:de:fe]" };
-    try std.testing.expectEqualStrings("ab", iter.next().?);
-    try std.testing.expectEqualStrings("cd", iter.next().?);
-    try std.testing.expectEqualStrings("de", iter.next().?);
-    try std.testing.expectEqualStrings("fe", iter.next().?);
-    try std.testing.expectEqual(null, iter.next());
+    const allocator = std.testing.allocator;
+    const input = "[ab:cd:de:fe]";
+    const expected = [_][]const u8{ "ab", "cd", "de", "fe" };
+
+    var iter = TagPartsIterator{ .raw = input };
+    var results = try utils.collectIterator([]const u8, allocator, &iter);
+    defer results.deinit(allocator);
+
+    try std.testing.expectEqualDeep(&expected, results.items);
 }
 
 /// Token structure.
@@ -86,79 +91,48 @@ const StringTokenizer = struct {
 };
 
 test "StringTokenizer" {
-    var iter = StringTokenizer{ .raw = "   [TAG1:cd:de:fe]    [TAG2]a" };
-
-    try std.testing.expectEqualDeep(
+    const allocator = std.testing.allocator;
+    const input = "   [TAG1:cd:de:fe]    [TAG2]a";
+    const expected = [_]Token{
         Token{ .text = "   ", .is_tag = false },
-        iter.next().?,
-    );
-
-    try std.testing.expectEqualDeep(
         Token{ .text = "[TAG1:cd:de:fe]", .is_tag = true },
-        iter.next().?,
-    );
-
-    try std.testing.expectEqualDeep(
         Token{ .text = "    ", .is_tag = false },
-        iter.next().?,
-    );
-
-    try std.testing.expectEqualDeep(
         Token{ .text = "[TAG2]", .is_tag = true },
-        iter.next().?,
-    );
-
-    try std.testing.expectEqualDeep(
         Token{ .text = "a", .is_tag = false },
-        iter.next().?,
-    );
+    };
 
-    try std.testing.expectEqualDeep(null, iter.next());
+    var iter = StringTokenizer{ .raw = input };
+
+    var results = try utils.collectIterator(Token, allocator, &iter);
+    defer results.deinit(allocator);
+
+    try std.testing.expectEqualDeep(&expected, results.items);
 }
 
 test "StringTokenizer multiline" {
-    const data =
+    const allocator = std.testing.allocator;
+    const input =
         \\[TAG1:cd:de:fe]
         \\[TAG2]a
         \\[TAG3]b
         \\[TAG4]c
     ;
-
-    var parser = StringTokenizer{ .raw = data };
-
-    try std.testing.expectEqualDeep(
+    const expected = [_]Token{
         Token{ .text = "[TAG1:cd:de:fe]", .is_tag = true },
-        parser.next().?,
-    );
-    try std.testing.expectEqualDeep(
         Token{ .text = "\n", .is_tag = false },
-        parser.next().?,
-    );
-    try std.testing.expectEqualDeep(
         Token{ .text = "[TAG2]", .is_tag = true },
-        parser.next().?,
-    );
-    try std.testing.expectEqualDeep(
         Token{ .text = "a\n", .is_tag = false },
-        parser.next().?,
-    );
-    try std.testing.expectEqualDeep(
         Token{ .text = "[TAG3]", .is_tag = true },
-        parser.next().?,
-    );
-    try std.testing.expectEqualDeep(
         Token{ .text = "b\n", .is_tag = false },
-        parser.next().?,
-    );
-    try std.testing.expectEqualDeep(
         Token{ .text = "[TAG4]", .is_tag = true },
-        parser.next().?,
-    );
-    try std.testing.expectEqualDeep(
         Token{ .text = "c", .is_tag = false },
-        parser.next().?,
-    );
-    try std.testing.expectEqualDeep(null, parser.next());
+    };
+
+    var parser = StringTokenizer{ .raw = input };
+    var results = try utils.collectIterator(Token, allocator, &parser);
+    defer results.deinit(allocator);
+
+    try std.testing.expectEqualDeep(&expected, results.items);
 }
 
 test "parse raw file" {
