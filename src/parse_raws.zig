@@ -140,9 +140,9 @@ test "parse raw file" {
     const file_path = "test_data/object_creature.txt";
     const cwd = std.Io.Dir.cwd();
     const file_contents = try cwd.readFileAlloc(io, file_path, allocator, .unlimited);
+    defer allocator.free(file_contents);
 
     var iterator = StringTokenizer{ .raw = file_contents };
-    defer allocator.free(iterator.raw);
     while (iterator.next()) |token| {
         if (token.is_tag) {
             try std.testing.expect(token.text.len > 0 and
