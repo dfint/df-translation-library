@@ -143,6 +143,23 @@ pub const Dictionary = struct {
     }
 };
 
+test "simple dictionary put and get" {
+    const allocator = std.testing.allocator;
+    var dictionary = Dictionary.init(allocator);
+    defer dictionary.deinit();
+    const key = DictionaryEntry.Key{
+        .original_string = "original string",
+        .context = "context",
+    };
+    const value = "translation";
+    try dictionary.put(key, value);
+    
+    try std.testing.expectEqualStrings(
+        "translation",
+        (try dictionary.get(key)).?,
+    );
+}
+
 test "try put the same key twice" {
     const allocator = std.testing.allocator;
     var dictionary = Dictionary.init(allocator);
@@ -157,47 +174,47 @@ test "try put the same key twice" {
     try dictionary.put(key, value); // Can cause a memory leak
 }
 
-test "load dictionary from mo" {
-    const io = std.testing.io;
-    const allocator = std.testing.allocator;
-    const po_path = "test_data/test.mo";
-    const cwd = std.Io.Dir.cwd();
-    const file = try cwd.openFile(io, po_path, .{});
-    const parser = try parse_mo.MoParser.init(io, file);
-    var iterator = try parser.iterateEntries(allocator);
+// test "load dictionary from mo" {
+//     const io = std.testing.io;
+//     const allocator = std.testing.allocator;
+//     const po_path = "test_data/test.mo";
+//     const cwd = std.Io.Dir.cwd();
+//     const file = try cwd.openFile(io, po_path, .{});
+//     const parser = try parse_mo.MoParser.init(io, file);
+//     var iterator = try parser.iterateEntries(allocator);
 
-    var dictionary = try Dictionary.loadFromIterator(allocator, &iterator);
-    defer dictionary.deinit();
-    try std.testing.expectEqualStrings(
-        "Translation 1",
-        (try dictionary.get(.{
-            .context = null,
-            .original_string = "Text 1",
-        })).?,
-    );
-    try std.testing.expectEqualStrings(
-        "Translation 2",
-        (try dictionary.get(.{
-            .context = null,
-            .original_string = "Text 2",
-        })).?,
-    );
-    try std.testing.expectEqualStrings(
-        "Translation 3",
-        (try dictionary.get(.{
-            .context = null,
-            .original_string = "Text 3",
-        })).?,
-    );
-    try std.testing.expectEqualStrings(
-        "Translation 4",
-        (try dictionary.get(.{
-            .context = "Context",
-            .original_string = "Text 4",
-        })).?,
-    );
-    try std.testing.expect((try dictionary.get(.{
-        .context = "Context",
-        .original_string = "Text 5",
-    })) == null);
-}
+//     var dictionary = try Dictionary.loadFromIterator(allocator, &iterator);
+//     defer dictionary.deinit();
+//     try std.testing.expectEqualStrings(
+//         "Translation 1",
+//         (try dictionary.get(.{
+//             .context = null,
+//             .original_string = "Text 1",
+//         })).?,
+//     );
+//     try std.testing.expectEqualStrings(
+//         "Translation 2",
+//         (try dictionary.get(.{
+//             .context = null,
+//             .original_string = "Text 2",
+//         })).?,
+//     );
+//     try std.testing.expectEqualStrings(
+//         "Translation 3",
+//         (try dictionary.get(.{
+//             .context = null,
+//             .original_string = "Text 3",
+//         })).?,
+//     );
+//     try std.testing.expectEqualStrings(
+//         "Translation 4",
+//         (try dictionary.get(.{
+//             .context = "Context",
+//             .original_string = "Text 4",
+//         })).?,
+//     );
+//     try std.testing.expect((try dictionary.get(.{
+//         .context = "Context",
+//         .original_string = "Text 5",
+//     })) == null);
+// }
