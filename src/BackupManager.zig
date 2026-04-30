@@ -79,7 +79,7 @@ fn deleteBackup(self: Self) !void {
     try self.backup_dir.deleteFile(self.io, self.backup_filename_buffer.items);
 }
 
-test "getBackupFileName" {
+test "BackupManager.getBackupFileName" {
     const allocator = std.testing.allocator;
 
     const data = [_]TestDataEntry([]const u8, []const u8){
@@ -96,7 +96,7 @@ test "getBackupFileName" {
     }
 }
 
-test "getFileNameStem" {
+test "BackupManager.getFileNameStem" {
     const data = [_]TestDataEntry([]const u8, []const u8){
         .{ .input = "test.txt", .expected = "test" },
         .{ .input = "test", .expected = "test" },
@@ -110,7 +110,7 @@ test "getFileNameStem" {
     }
 }
 
-test "test backup" {
+test "BackupManager: full test" {
     const io = std.testing.io;
     const cwd = std.Io.Dir.cwd();
 

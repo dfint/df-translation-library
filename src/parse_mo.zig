@@ -51,7 +51,7 @@ const MoFileEntry = struct {
     }
 };
 
-test "MoFileEntry no allocation" {
+test "MoFileEntry: no allocation" {
     const original_string = "context\x04original string";
     const translation_string = "translation string";
 
@@ -63,7 +63,7 @@ test "MoFileEntry no allocation" {
     try std.testing.expectEqualStrings("context\x04original string", mo_entry._full_original_string);
 }
 
-test "MoFileEntry with allocation" {
+test "MoFileEntry: with allocation" {
     var allocator = std.testing.allocator;
     const original_string = allocator.dupe(u8, "context\x04original string") catch unreachable;
     const translation_string = allocator.dupe(u8, "translation string") catch unreachable;
@@ -198,7 +198,7 @@ pub const MoParser = struct {
     };
 };
 
-test "MoParser" {
+test "MoParser: parse mo file" {
     const io = std.testing.io;
     const cwd = std.Io.Dir.cwd();
     const file = try cwd.openFile(io, "test_data/test.mo", .{});
@@ -220,7 +220,7 @@ test "MoParser" {
     try std.testing.expectEqual(expected_number_of_strings, i);
 }
 
-test "load dictionary from mo" {
+test "MoParser, Dictionary: load from mo" {
     const io = std.testing.io;
     const allocator = std.testing.allocator;
     const po_path = "test_data/test.mo";

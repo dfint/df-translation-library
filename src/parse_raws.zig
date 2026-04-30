@@ -90,7 +90,7 @@ const StringTokenizer = struct {
     }
 };
 
-test "StringTokenizer" {
+test "StringTokenizer: one line" {
     const allocator = std.testing.allocator;
     const input = "   [TAG1:cd:de:fe]    [TAG2]a";
     const expected = [_]Token{
@@ -108,7 +108,7 @@ test "StringTokenizer" {
     try std.testing.expectEqualDeep(&expected, results.items);
 }
 
-test "StringTokenizer multiline" {
+test "StringTokenizer: multiline" {
     const allocator = std.testing.allocator;
     const input =
         \\[TAG1:cd:de:fe]
@@ -134,7 +134,7 @@ test "StringTokenizer multiline" {
     try std.testing.expectEqualDeep(&expected, results.items);
 }
 
-test "parse raw file" {
+test "StringTokenizer: parse raw file" {
     const io = std.testing.io;
     const allocator = std.testing.allocator;
     const file_path = "test_data/object_creature.txt";

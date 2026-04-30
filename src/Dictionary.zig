@@ -104,7 +104,7 @@ pub fn get(self: Self, key: DictionaryKey) !?[]const u8 {
     return self.entries.get(key);
 }
 
-test "simple dictionary put and get" {
+test "Dictionary: put and get with context" {
     const allocator = std.testing.allocator;
     var dictionary = Self.init(allocator);
     defer dictionary.deinit();
@@ -121,7 +121,7 @@ test "simple dictionary put and get" {
     );
 }
 
-test "simple dictionary put and get with null context" {
+test "Dictionary: put and get with null context" {
     const allocator = std.testing.allocator;
     var dictionary = Self.init(allocator);
     defer dictionary.deinit();
@@ -138,7 +138,7 @@ test "simple dictionary put and get with null context" {
     );
 }
 
-test "simple dictionary get with no value" {
+test "Dictionary: get nonexistent key" {
     const allocator = std.testing.allocator;
     var dictionary = Self.init(allocator);
     defer dictionary.deinit();
@@ -153,7 +153,7 @@ test "simple dictionary get with no value" {
     );
 }
 
-test "try put the same key twice" {
+test "Dictionary: try put the same key twice" {
     const allocator = std.testing.allocator;
     var dictionary = Self.init(allocator);
     defer dictionary.deinit();
@@ -167,7 +167,7 @@ test "try put the same key twice" {
     try dictionary.put(key, value); // Can cause a memory leak
 }
 
-test "init dictionary from iterator" {
+test "Dictionary: init from iterator" {
     const allocator = std.testing.allocator;
 
     const DictEntry = struct { DictionaryKey, []const u8 };

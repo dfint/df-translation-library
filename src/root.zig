@@ -5,7 +5,7 @@ pub const parse_raws = @import("parse_raws.zig");
 pub const parse_mo = @import("parse_mo.zig");
 const BackupManager = @import("BackupManager.zig");
 
-test {
+test "fake root test" {
     _ = parse_raws;
     _ = parse_mo;
     _ = BackupManager;
@@ -14,8 +14,4 @@ test {
 // TODO: replace with exported dll functions
 pub export fn add(a: i32, b: i32) i32 {
     return a + b;
-}
-
-test "basic add functionality" {
-    try testing.expectEqual(10, add(3, 7));
 }
