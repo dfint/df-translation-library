@@ -36,7 +36,7 @@ pub fn intern(self: *Self, string: []const u8) ![]const u8 {
     return copy;
 }
 
-test "Interner" {
+test "StringInterner" {
     const allocator = std.testing.allocator;
     var interner = Self.init(allocator);
     defer interner.deinit();
