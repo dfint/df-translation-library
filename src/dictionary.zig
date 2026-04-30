@@ -117,7 +117,7 @@ pub const Dictionary = struct {
         var dictionary = Dictionary.init(allocator);
         while (try iterator.next()) |entry| {
             if (entry.key.original_string.len == 0) continue;
-            try dictionary.put(entry);
+            try dictionary.put(entry.key, entry.translation_string);
         }
         return dictionary;
     }
@@ -129,21 +129,17 @@ pub const Dictionary = struct {
     }
 
     /// Put an entry into the dictionary.
-    pub fn put(self: *Dictionary, dictionary_entry: DictionaryEntry) !void {
-        const value = try self.interner.intern(dictionary_entry.translation_string);
-        const key = DictionaryEntry.Key{
-            .original_string = try self.interner.intern(dictionary_entry.key.original_string),
-            .context = if (dictionary_entry.key.context) |ctx| try self.interner.intern(ctx) else null,
+    pub fn put(self: *Dictionary, key: DictionaryEntry.Key, value: []const u8) !void {
+        const new_key = DictionaryEntry.Key{
+            .original_string = try self.interner.intern(key.original_string),
+            .context = if (key.context) |ctx| try self.interner.intern(ctx) else null,
         };
-        try self.entries.put(key, value);
+        try self.entries.put(new_key, value);
     }
 
     /// Get translation by original string and context.
-    pub fn get(self: Dictionary, context: ?[]const u8, original_string: []const u8) !?[]const u8 {
-        return self.entries.get(.{
-            .original_string = original_string,
-            .context = context,
-        });
+    pub fn get(self: Dictionary, key: DictionaryEntry.Key) !?[]const u8 {
+        return self.entries.get(key);
     }
 };
 
@@ -151,12 +147,14 @@ test "try put the same key twice" {
     const allocator = std.testing.allocator;
     var dictionary = Dictionary.init(allocator);
     defer dictionary.deinit();
-    const entry = DictionaryEntry{
-        .key = .{ .original_string = "original string", .context = "context" },
-        .translation_string = "translation",
+
+    const key = DictionaryEntry.Key{
+        .original_string = "original string",
+        .context = "context",
     };
-    try dictionary.put(entry);
-    try dictionary.put(entry); // Can cause a memory leak
+    const value = "translation";
+    try dictionary.put(key, value);
+    try dictionary.put(key, value); // Can cause a memory leak
 }
 
 test "load dictionary from mo" {
@@ -172,19 +170,34 @@ test "load dictionary from mo" {
     defer dictionary.deinit();
     try std.testing.expectEqualStrings(
         "Translation 1",
-        (try dictionary.get(null, "Text 1")).?,
+        (try dictionary.get(.{
+            .context = null,
+            .original_string = "Text 1",
+        })).?,
     );
     try std.testing.expectEqualStrings(
         "Translation 2",
-        (try dictionary.get(null, "Text 2")).?,
+        (try dictionary.get(.{
+            .context = null,
+            .original_string = "Text 2",
+        })).?,
     );
     try std.testing.expectEqualStrings(
         "Translation 3",
-        (try dictionary.get(null, "Text 3")).?,
+        (try dictionary.get(.{
+            .context = null,
+            .original_string = "Text 3",
+        })).?,
     );
     try std.testing.expectEqualStrings(
         "Translation 4",
-        (try dictionary.get("Context", "Text 4")).?,
+        (try dictionary.get(.{
+            .context = "Context",
+            .original_string = "Text 4",
+        })).?,
     );
-    try std.testing.expect((try dictionary.get("Context", "Text 5")) == null);
+    try std.testing.expect((try dictionary.get(.{
+        .context = "Context",
+        .original_string = "Text 5",
+    })) == null);
 }
