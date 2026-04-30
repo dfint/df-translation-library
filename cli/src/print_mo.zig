@@ -21,11 +21,13 @@ pub fn print_mo(io: std.Io, allocator: std.mem.Allocator, mo_path: []const u8) !
     var iterator = try parser.iterateEntries(allocator);
     while (try iterator.next()) |entry| {
         // defer entry.deinit(allocator);
+        const key = entry[0];
+        const translation_string = entry[1];
 
         std.debug.print("context: {s}\noriginal: {s}\ntranslation: {s}\n\n", .{
-            entry.key.context orelse "NULL",
-            entry.key.original_string,
-            entry.translation_string,
+            key.context orelse "NULL",
+            key.original_string,
+            translation_string,
         });
     }
 }

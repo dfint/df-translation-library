@@ -116,8 +116,10 @@ pub const Dictionary = struct {
     pub fn loadFromIterator(allocator: std.mem.Allocator, iterator: anytype) !Dictionary {
         var dictionary = Dictionary.init(allocator);
         while (try iterator.next()) |entry| {
-            if (entry.key.original_string.len == 0) continue;
-            try dictionary.put(entry.key, entry.translation_string);
+            const key: DictionaryEntry.Key = entry[0];
+            const value: []const u8 = entry[1];
+            if (key.original_string.len == 0) continue;
+            try dictionary.put(key, value);
         }
         return dictionary;
     }

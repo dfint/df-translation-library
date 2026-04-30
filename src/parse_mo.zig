@@ -14,7 +14,8 @@ const CONTEXT_SEPARATOR: []const u8 = "\x04";
 
 /// Structure, which describes an entry of a MO file.
 const MoFileEntry = struct {
-    dictionary_entry: DictionaryEntry,
+    key: DictionaryEntry.Key,
+    translation_string: []const u8,
     _full_original_string: []const u8,
 
     const Self = @This();
@@ -22,10 +23,8 @@ const MoFileEntry = struct {
     /// Initialize the structure.
     pub fn init(original_string: []const u8, translation_string: []const u8) Self {
         return .{
-            .dictionary_entry = .{
-                .key = MoFileEntry.extractKey(original_string),
-                .translation_string = translation_string,
-            },
+            .key = MoFileEntry.extractKey(original_string),
+            .translation_string = translation_string,
             ._full_original_string = original_string,
         };
     }
@@ -48,7 +47,7 @@ const MoFileEntry = struct {
     /// Deinitialize the structure.
     pub fn deinit(self: Self, allocator: std.mem.Allocator) void {
         allocator.free(self._full_original_string);
-        allocator.free(self.dictionary_entry.translation_string);
+        allocator.free(self.translation_string);
     }
 };
 
@@ -57,11 +56,10 @@ test "MoFileEntry no allocation" {
     const translation_string = "translation string";
 
     const mo_entry = MoFileEntry.init(original_string, translation_string);
-    const dictionary_entry = mo_entry.dictionary_entry;
 
-    try std.testing.expectEqualStrings("original string", dictionary_entry.key.original_string);
-    try std.testing.expectEqualStrings("context", dictionary_entry.key.context orelse "");
-    try std.testing.expectEqualStrings("translation string", dictionary_entry.translation_string);
+    try std.testing.expectEqualStrings("original string", mo_entry.key.original_string);
+    try std.testing.expectEqualStrings("context", mo_entry.key.context orelse "");
+    try std.testing.expectEqualStrings("translation string", mo_entry.translation_string);
     try std.testing.expectEqualStrings("context\x04original string", mo_entry._full_original_string);
 }
 
@@ -73,11 +71,9 @@ test "MoFileEntry with allocation" {
     const mo_entry = MoFileEntry.init(original_string, translation_string);
     defer mo_entry.deinit(allocator);
 
-    const dictionary_entry = mo_entry.dictionary_entry;
-
-    try std.testing.expectEqualStrings("original string", dictionary_entry.key.original_string);
-    try std.testing.expectEqualStrings("context", dictionary_entry.key.context orelse "");
-    try std.testing.expectEqualStrings("translation string", dictionary_entry.translation_string);
+    try std.testing.expectEqualStrings("original string", mo_entry.key.original_string);
+    try std.testing.expectEqualStrings("context", mo_entry.key.context orelse "");
+    try std.testing.expectEqualStrings("translation string", mo_entry.translation_string);
     try std.testing.expectEqualStrings("context\x04original string", mo_entry._full_original_string);
 }
 
@@ -164,8 +160,8 @@ pub const MoParser = struct {
             }
         }
 
-        /// Get the next file entry.
-        pub fn next(self: *Iterator) !?DictionaryEntry {
+        /// Get the next file entry. Returns pair of a dictinary key and translation string (dictionary value)
+        pub fn next(self: *Iterator) !?struct { DictionaryEntry.Key, []const u8 } {
             if (self.value) |value| {
                 value.deinit(self.allocator);
                 self.value = null;
@@ -183,7 +179,7 @@ pub const MoParser = struct {
                 try self.readString(translation_string_table_offset, self.i),
             );
             self.value = value;
-            return value.dictionary_entry;
+            return .{ value.key, value.translation_string };
         }
 
         const STRING_TABLE_ENTRY_SIZE = 8;
@@ -214,9 +210,11 @@ test "MoParser" {
 
     var i: u32 = 0;
     while (try iterator.next()) |entry| {
-        try std.testing.expect(entry.key.context == null or entry.key.context.?.len > 0 and entry.key.context.?.len < 100);
-        try std.testing.expect(entry.key.original_string.len < 100);
-        try std.testing.expect(entry.translation_string.len > 0 and entry.translation_string.len < 100);
+        const key = entry[0];
+        const translation_string = entry[1];
+        try std.testing.expect(key.context == null or key.context.?.len > 0 and key.context.?.len < 100);
+        try std.testing.expect(key.original_string.len < 100);
+        try std.testing.expect(translation_string.len > 0 and translation_string.len < 100);
         i += 1;
     }
     try std.testing.expectEqual(expected_number_of_strings, i);
