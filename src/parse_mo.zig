@@ -219,3 +219,52 @@ test "MoParser" {
     }
     try std.testing.expectEqual(expected_number_of_strings, i);
 }
+
+test "load dictionary from mo" {
+    const io = std.testing.io;
+    const allocator = std.testing.allocator;
+    const po_path = "test_data/test.mo";
+    const cwd = std.Io.Dir.cwd();
+    const file = try cwd.openFile(io, po_path, .{});
+    const parser = try MoParser.init(io, file);
+    var iterator = try parser.iterateEntries(allocator);
+
+    var dictionary = try Dictionary.loadFromIterator(allocator, &iterator);
+    defer dictionary.deinit();
+
+    try std.testing.expectEqualStrings(
+        "Translation 1",
+        (try dictionary.get(.{
+            .context = null,
+            .original_string = "Text 1",
+        })).?,
+    );
+    try std.testing.expectEqualStrings(
+        "Translation 2",
+        (try dictionary.get(.{
+            .context = null,
+            .original_string = "Text 2",
+        })).?,
+    );
+    try std.testing.expectEqualStrings(
+        "Translation 3",
+        (try dictionary.get(.{
+            .context = null,
+            .original_string = "Text 3",
+        })).?,
+    );
+    try std.testing.expectEqualStrings(
+        "Translation 4",
+        (try dictionary.get(.{
+            .context = "Context",
+            .original_string = "Text 4",
+        })).?,
+    );
+    try std.testing.expectEqualDeep(
+        null,
+        (try dictionary.get(.{
+            .context = "Context",
+            .original_string = "Text 5",
+        })),
+    );
+}

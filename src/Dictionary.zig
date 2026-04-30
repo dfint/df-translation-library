@@ -2,7 +2,6 @@
 
 const std = @import("std");
 
-const parse_mo = @import("parse_mo.zig");
 const StringInterner = @import("StringInterner.zig");
 
 /// Key of the Dictionary
@@ -60,10 +59,22 @@ fn init(allocator: std.mem.Allocator) Self {
     };
 }
 
+/// Get next value from iterator with try (if `.next()` returned `error_union`) or without it.
+fn nextValue(iterator: anytype) !?struct { DictionaryKey, []const u8 } {
+    const result = iterator.next();
+    return switch (@typeInfo(@TypeOf(result))) {
+        .error_union => blk: {
+            const val = try result;
+            break :blk val;
+        },
+        else => result,
+    };
+}
+
 /// Populate dictionary from iterator
 pub fn loadFromIterator(allocator: std.mem.Allocator, iterator: anytype) !Self {
     var dictionary = Self.init(allocator);
-    while (try iterator.next()) |entry| {
+    while (try nextValue(iterator)) |entry| {
         const key: DictionaryKey = entry[0];
         const value: []const u8 = entry[1];
         if (key.original_string.len == 0) continue;
@@ -156,51 +167,37 @@ test "try put the same key twice" {
     try dictionary.put(key, value); // Can cause a memory leak
 }
 
-test "load dictionary from mo" {
-    const io = std.testing.io;
+test "init dictionary from iterator" {
     const allocator = std.testing.allocator;
-    const po_path = "test_data/test.mo";
-    const cwd = std.Io.Dir.cwd();
-    const file = try cwd.openFile(io, po_path, .{});
-    const parser = try parse_mo.MoParser.init(io, file);
-    var iterator = try parser.iterateEntries(allocator);
 
+    const DictEntry = struct { DictionaryKey, []const u8 };
+    const ArrayIterator = struct {
+        data: []const DictEntry,
+        index: usize = 0,
+
+        pub fn next(self: *@This()) ?DictEntry {
+            if (self.index >= self.data.len) return null;
+            const value = self.data[self.index];
+            self.index += 1;
+            return value;
+        }
+    };
+
+    const data = [_]DictEntry{
+        .{ .{ .context = null, .original_string = "Text 1" }, "Translation 1" },
+        .{ .{ .context = "Context", .original_string = "Text 2" }, "Translation 2" },
+    };
+
+    var iterator = ArrayIterator{ .data = &data };
     var dictionary = try Self.loadFromIterator(allocator, &iterator);
     defer dictionary.deinit();
 
-    try std.testing.expectEqualStrings(
-        "Translation 1",
-        (try dictionary.get(.{
-            .context = null,
-            .original_string = "Text 1",
-        })).?,
-    );
-    try std.testing.expectEqualStrings(
-        "Translation 2",
-        (try dictionary.get(.{
-            .context = null,
-            .original_string = "Text 2",
-        })).?,
-    );
-    try std.testing.expectEqualStrings(
-        "Translation 3",
-        (try dictionary.get(.{
-            .context = null,
-            .original_string = "Text 3",
-        })).?,
-    );
-    try std.testing.expectEqualStrings(
-        "Translation 4",
-        (try dictionary.get(.{
-            .context = "Context",
-            .original_string = "Text 4",
-        })).?,
-    );
-    try std.testing.expectEqualDeep(
-        null,
-        (try dictionary.get(.{
-            .context = "Context",
-            .original_string = "Text 5",
-        })),
-    );
+    for (data) |entry| {
+        const key = entry[0];
+        const translation = entry[1];
+        try std.testing.expectEqualStrings(
+            translation,
+            (try dictionary.get(key)).?,
+        );
+    }
 }
