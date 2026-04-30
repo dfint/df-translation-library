@@ -153,10 +153,42 @@ test "simple dictionary put and get" {
     };
     const value = "translation";
     try dictionary.put(key, value);
-    
+
     try std.testing.expectEqualStrings(
         "translation",
         (try dictionary.get(key)).?,
+    );
+}
+
+test "simple dictionary put and get with null context" {
+    const allocator = std.testing.allocator;
+    var dictionary = Dictionary.init(allocator);
+    defer dictionary.deinit();
+    const key = DictionaryEntry.Key{
+        .original_string = "original string",
+        .context = null,
+    };
+    const value = "translation";
+    try dictionary.put(key, value);
+
+    try std.testing.expectEqualStrings(
+        "translation",
+        (try dictionary.get(key)).?,
+    );
+}
+
+test "simple dictionary get with no value" {
+    const allocator = std.testing.allocator;
+    var dictionary = Dictionary.init(allocator);
+    defer dictionary.deinit();
+    const key = DictionaryEntry.Key{
+        .original_string = "original string",
+        .context = null,
+    };
+
+    try std.testing.expectEqualDeep(
+        null,
+        (try dictionary.get(key)),
     );
 }
 
