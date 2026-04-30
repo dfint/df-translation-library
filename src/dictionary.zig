@@ -244,8 +244,11 @@ test "load dictionary from mo" {
             .original_string = "Text 4",
         })).?,
     );
-    try std.testing.expect((try dictionary.get(.{
-        .context = "Context",
-        .original_string = "Text 5",
-    })) == null);
+    try std.testing.expectEqualDeep(
+        null,
+        (try dictionary.get(.{
+            .context = "Context",
+            .original_string = "Text 5",
+        })),
+    );
 }
