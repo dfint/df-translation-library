@@ -2,6 +2,9 @@
 
 const std = @import("std");
 
+const testing_utils = @import("testing_utils.zig");
+const TestDataEntry = testing_utils.TestDataEntry;
+
 io: std.Io,
 allocator: std.mem.Allocator,
 backup_dir: std.Io.Dir,
@@ -76,15 +79,10 @@ fn deleteBackup(self: Self) !void {
     try self.backup_dir.deleteFile(self.io, self.backup_filename_buffer.items);
 }
 
-const TestDataEntry = struct {
-    input: []const u8,
-    expected: []const u8,
-};
-
 test "getBackupFileName" {
     const allocator = std.testing.allocator;
 
-    const data = [_]TestDataEntry{
+    const data = [_]TestDataEntry([]const u8, []const u8){
         .{ .input = "test.txt", .expected = "test.bak" },
         .{ .input = "test", .expected = "test.bak" },
         .{ .input = "some.file.txt", .expected = "some.file.bak" },
@@ -99,7 +97,7 @@ test "getBackupFileName" {
 }
 
 test "getFileNameStem" {
-    const data = [_]TestDataEntry{
+    const data = [_]TestDataEntry([]const u8, []const u8){
         .{ .input = "test.txt", .expected = "test" },
         .{ .input = "test", .expected = "test" },
         .{ .input = "some.file.txt", .expected = "some.file" },
