@@ -4,7 +4,7 @@
 const std = @import("std");
 
 const dictionary = @import("dictionary.zig");
-const DictionaryEntry = dictionary.DictionaryEntry;
+const DictionaryKey = dictionary.DictionaryKey;
 
 const MoParserError = error{
     InvalidFormat,
@@ -14,7 +14,7 @@ const CONTEXT_SEPARATOR: []const u8 = "\x04";
 
 /// Structure, which describes an entry of a MO file.
 const MoFileEntry = struct {
-    key: DictionaryEntry.Key,
+    key: DictionaryKey,
     translation_string: []const u8,
     _full_original_string: []const u8,
 
@@ -30,7 +30,7 @@ const MoFileEntry = struct {
     }
 
     /// Split original string into string and context, return dictionary entry key.
-    fn extractKey(full_original_string: []const u8) DictionaryEntry.Key {
+    fn extractKey(full_original_string: []const u8) DictionaryKey {
         if (std.mem.indexOf(u8, full_original_string, CONTEXT_SEPARATOR)) |index| {
             return .{
                 .original_string = full_original_string[index + 1 ..],
@@ -161,7 +161,7 @@ pub const MoParser = struct {
         }
 
         /// Get the next file entry. Returns pair of a dictinary key and translation string (dictionary value)
-        pub fn next(self: *Iterator) !?struct { DictionaryEntry.Key, []const u8 } {
+        pub fn next(self: *Iterator) !?struct { DictionaryKey, []const u8 } {
             if (self.value) |value| {
                 value.deinit(self.allocator);
                 self.value = null;

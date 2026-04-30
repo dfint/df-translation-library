@@ -52,20 +52,15 @@ test "Interner" {
     try std.testing.expect(interned_string1.ptr == interned_string2.ptr);
 }
 
-pub const DictionaryEntry = struct {
-    key: Key,
-    translation_string: []const u8,
-
-    pub const Key = struct {
-        original_string: []const u8,
-        context: ?[]const u8 = null,
-    };
+pub const DictionaryKey = struct {
+    original_string: []const u8,
+    context: ?[]const u8 = null,
 };
 
 const HashingContext = struct {
     const Self = @This();
 
-    pub fn hash(_: Self, key: DictionaryEntry.Key) u64 {
+    pub fn hash(_: Self, key: DictionaryKey) u64 {
         var hasher = std.hash.Wyhash.init(0);
 
         // hash original_string string
@@ -82,7 +77,7 @@ const HashingContext = struct {
         return hasher.final();
     }
 
-    pub fn eql(_: Self, a: DictionaryEntry.Key, b: DictionaryEntry.Key) bool {
+    pub fn eql(_: Self, a: DictionaryKey, b: DictionaryKey) bool {
         if (!std.mem.eql(u8, a.original_string, b.original_string)) return false;
 
         if (a.context == null and b.context == null) return true;
@@ -95,7 +90,7 @@ const HashingContext = struct {
 /// Dictionary container structure.
 pub const Dictionary = struct {
     allocator: std.mem.Allocator,
-    entries: std.HashMap(DictionaryEntry.Key, []const u8, HashingContext, 80),
+    entries: std.HashMap(DictionaryKey, []const u8, HashingContext, 80),
     interner: StringInterner,
 
     /// Initialize dictionary.
@@ -103,7 +98,7 @@ pub const Dictionary = struct {
         return Dictionary{
             .allocator = allocator,
             .entries = std.HashMap(
-                DictionaryEntry.Key,
+                DictionaryKey,
                 []const u8,
                 HashingContext,
                 80,
@@ -116,7 +111,7 @@ pub const Dictionary = struct {
     pub fn loadFromIterator(allocator: std.mem.Allocator, iterator: anytype) !Dictionary {
         var dictionary = Dictionary.init(allocator);
         while (try iterator.next()) |entry| {
-            const key: DictionaryEntry.Key = entry[0];
+            const key: DictionaryKey = entry[0];
             const value: []const u8 = entry[1];
             if (key.original_string.len == 0) continue;
             try dictionary.put(key, value);
@@ -131,9 +126,9 @@ pub const Dictionary = struct {
     }
 
     /// Put an entry into the dictionary.
-    pub fn put(self: *Dictionary, key: DictionaryEntry.Key, value: []const u8) !void {
+    pub fn put(self: *Dictionary, key: DictionaryKey, value: []const u8) !void {
         const new_value = try self.interner.intern(value);
-        const new_key = DictionaryEntry.Key{
+        const new_key = DictionaryKey{
             .original_string = try self.interner.intern(key.original_string),
             .context = if (key.context) |ctx| try self.interner.intern(ctx) else null,
         };
@@ -141,7 +136,7 @@ pub const Dictionary = struct {
     }
 
     /// Get translation by original string and context.
-    pub fn get(self: Dictionary, key: DictionaryEntry.Key) !?[]const u8 {
+    pub fn get(self: Dictionary, key: DictionaryKey) !?[]const u8 {
         return self.entries.get(key);
     }
 };
@@ -150,7 +145,7 @@ test "simple dictionary put and get" {
     const allocator = std.testing.allocator;
     var dictionary = Dictionary.init(allocator);
     defer dictionary.deinit();
-    const key = DictionaryEntry.Key{
+    const key = DictionaryKey{
         .original_string = "original string",
         .context = "context",
     };
@@ -167,7 +162,7 @@ test "simple dictionary put and get with null context" {
     const allocator = std.testing.allocator;
     var dictionary = Dictionary.init(allocator);
     defer dictionary.deinit();
-    const key = DictionaryEntry.Key{
+    const key = DictionaryKey{
         .original_string = "original string",
         .context = null,
     };
@@ -184,7 +179,7 @@ test "simple dictionary get with no value" {
     const allocator = std.testing.allocator;
     var dictionary = Dictionary.init(allocator);
     defer dictionary.deinit();
-    const key = DictionaryEntry.Key{
+    const key = DictionaryKey{
         .original_string = "original string",
         .context = null,
     };
@@ -200,7 +195,7 @@ test "try put the same key twice" {
     var dictionary = Dictionary.init(allocator);
     defer dictionary.deinit();
 
-    const key = DictionaryEntry.Key{
+    const key = DictionaryKey{
         .original_string = "original string",
         .context = "context",
     };
