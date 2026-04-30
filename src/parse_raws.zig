@@ -94,15 +94,14 @@ test "StringTokenizer" {
     const allocator = std.testing.allocator;
     const input = "   [TAG1:cd:de:fe]    [TAG2]a";
     const expected = [_]Token{
-        Token{ .text = "   ", .is_tag = false },
-        Token{ .text = "[TAG1:cd:de:fe]", .is_tag = true },
-        Token{ .text = "    ", .is_tag = false },
-        Token{ .text = "[TAG2]", .is_tag = true },
-        Token{ .text = "a", .is_tag = false },
+        .{ .text = "   ", .is_tag = false },
+        .{ .text = "[TAG1:cd:de:fe]", .is_tag = true },
+        .{ .text = "    ", .is_tag = false },
+        .{ .text = "[TAG2]", .is_tag = true },
+        .{ .text = "a", .is_tag = false },
     };
 
     var iter = StringTokenizer{ .raw = input };
-
     var results = try utils.collectIterator(Token, allocator, &iter);
     defer results.deinit(allocator);
 
@@ -118,14 +117,14 @@ test "StringTokenizer multiline" {
         \\[TAG4]c
     ;
     const expected = [_]Token{
-        Token{ .text = "[TAG1:cd:de:fe]", .is_tag = true },
-        Token{ .text = "\n", .is_tag = false },
-        Token{ .text = "[TAG2]", .is_tag = true },
-        Token{ .text = "a\n", .is_tag = false },
-        Token{ .text = "[TAG3]", .is_tag = true },
-        Token{ .text = "b\n", .is_tag = false },
-        Token{ .text = "[TAG4]", .is_tag = true },
-        Token{ .text = "c", .is_tag = false },
+        .{ .text = "[TAG1:cd:de:fe]", .is_tag = true },
+        .{ .text = "\n", .is_tag = false },
+        .{ .text = "[TAG2]", .is_tag = true },
+        .{ .text = "a\n", .is_tag = false },
+        .{ .text = "[TAG3]", .is_tag = true },
+        .{ .text = "b\n", .is_tag = false },
+        .{ .text = "[TAG4]", .is_tag = true },
+        .{ .text = "c", .is_tag = false },
     };
 
     var parser = StringTokenizer{ .raw = input };
