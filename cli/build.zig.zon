@@ -2,14 +2,14 @@
     .name = .df_translation_library_cli,
     .version = "0.0.0",
     .fingerprint = 0xc6d8fd606c9ea848, // Changing this has security and trust implications.
-    .minimum_zig_version = "0.16.0",
+    .minimum_zig_version = "0.17.0",
     .dependencies = .{
         .df_translation_library = .{
             .path = "..",
         },
         .zig_args = .{
-            .url = "https://github.com/ikskuh/zig-args/archive/d47ae21768f9ec47c2a4154ab48b87166965b820.zip",
-            .hash = "args-0.0.0-CiLiqmvgAADyJmrzcQTP9IOYNvTzR_KGrg3ZNNsH2Qv0",
+            .url = "git+https://github.com/ikskuh/zig-args.git#ad3c89ecdb2979b8b5d52b43b78e79bf51293235",
+            .hash = "args-0.0.0-CiLiqmHiAABlN6icC9sZHdp8HVplOXDxuUNz2VUY_K2X",
         },
     },
     .paths = .{

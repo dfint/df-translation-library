@@ -22,7 +22,7 @@ jobs:
       fail-fast: false
       matrix:
         zig-version: 
-          - "0.16.0"
+          - "0.17.0"
           # - "master"
 
     name: Build and Test
@@ -37,7 +37,7 @@ jobs:
 
       - name: Install and run zlint
         run: |
-          curl -fsSL https://github.com/DonIsaac/zlint/releases/download/v0.8.1/zlint-linux-x86_64 > zlint
+          curl -fsSL https://github.com/DonIsaac/zlint/releases/download/v0.10.0/zlint-linux-x86_64 > zlint
           chmod +x zlint
           ./zlint --deny-warnings
 
