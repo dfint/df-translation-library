@@ -15,7 +15,7 @@ pub fn init(allocator: std.mem.Allocator) Self {
     };
 }
 
-/// Deininialize interner.
+/// Deinitialize interner.
 pub fn deinit(self: *Self) void {
     var it = self.map.keyIterator();
     while (it.next()) |key| {
@@ -25,7 +25,7 @@ pub fn deinit(self: *Self) void {
 }
 
 /// Create a copy of a string if it has not been stored in the internal map yet,
-/// otherwise return exisitng string copy from the map.
+/// otherwise return existing string copy from the map.
 pub fn intern(self: *Self, string: []const u8) ![]const u8 {
     if (self.map.getKey(string)) |existing| {
         return existing;
