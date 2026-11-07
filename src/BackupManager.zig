@@ -79,7 +79,7 @@ fn deleteBackup(self: Self) !void {
     try self.backup_dir.deleteFile(self.io, self.backup_filename_buffer.items);
 }
 
-test "BackupManager.getBackupFileName" {
+test "BackupManager: getBackupFileName returns a .bak filename" {
     const allocator = std.testing.allocator;
 
     const data = [_]TestDataEntry([]const u8, []const u8){
@@ -96,7 +96,7 @@ test "BackupManager.getBackupFileName" {
     }
 }
 
-test "BackupManager.getFileNameStem" {
+test "BackupManager: getFileNameStem removes the extension" {
     const data = [_]TestDataEntry([]const u8, []const u8){
         .{ .input = "test.txt", .expected = "test" },
         .{ .input = "test", .expected = "test" },

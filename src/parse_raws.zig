@@ -101,7 +101,7 @@ test "parse_raws: getContextFromTag tracks object header and definition" {
     try std.testing.expect(regular_tag == .regular_tag);
 }
 
-test "TagPartsIterator" {
+test "parse_raws: TagPartsIterator parses fields" {
     const allocator = std.testing.allocator;
     const input = "[ab:cd:de:fe]";
     const expected = [_][]const u8{ "ab", "cd", "de", "fe" };
@@ -113,7 +113,7 @@ test "TagPartsIterator" {
     try std.testing.expectEqualDeep(&expected, results.items);
 }
 
-test "TagPartsIterator: empty final field" {
+test "parse_raws: TagPartsIterator handles empty final field" {
     const allocator = std.testing.allocator;
     const input = "[TAG:text:]";
     const expected = [_][]const u8{ "TAG", "text", "" };
@@ -172,7 +172,7 @@ pub const StringTokenizer = struct {
     }
 };
 
-test "StringTokenizer: one line" {
+test "parse_raws: StringTokenizer parses one line" {
     const allocator = std.testing.allocator;
     const input = "   [TAG1:cd:de:fe]    [TAG2]a";
     const expected = [_]Token{
@@ -190,7 +190,7 @@ test "StringTokenizer: one line" {
     try std.testing.expectEqualDeep(&expected, results.items);
 }
 
-test "StringTokenizer: multiline" {
+test "parse_raws: StringTokenizer parses multiline input" {
     const allocator = std.testing.allocator;
     const input =
         \\[TAG1:cd:de:fe]
@@ -216,7 +216,7 @@ test "StringTokenizer: multiline" {
     try std.testing.expectEqualDeep(&expected, results.items);
 }
 
-test "StringTokenizer: parse raw file" {
+test "parse_raws: StringTokenizer parses a RAW file" {
     const io = std.testing.io;
     const allocator = std.testing.allocator;
     const file_path = "test_data/object_creature.txt";

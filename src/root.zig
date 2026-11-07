@@ -4,7 +4,7 @@ pub const translate_raws = @import("translate_raws.zig");
 pub const Dictionary = @import("Dictionary.zig");
 const BackupManager = @import("BackupManager.zig");
 
-test "fake root test" {
+test "root: imports public modules" {
     _ = parse_raws;
     _ = parse_csv;
     _ = translate_raws;
