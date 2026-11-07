@@ -37,4 +37,4 @@ This repository is a Zig library and CLI for processing Dwarf Fortress translati
 - Prefer iterators over accumulating values in an `ArrayList` when the data can be processed incrementally.
 - Prefer returning slices of strings instead of making copies of their fragments.
 - When porting code from another language, preserve its intended behavior but express it idiomatically in Zig. Prefer the patterns listed above, such as iterators, slices, and avoiding unnecessary allocations.
-- When you create a pull-request or an issue, start the description with "I'm just a small toaster, don't mind me.".
+- When you create a pull request or an issue, end the description with "I'm just a small toaster, please, don't mind me.".
