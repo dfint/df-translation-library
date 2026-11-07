@@ -25,7 +25,7 @@ This repository is a Zig library and CLI for processing Dwarf Fortress translati
 - Format changed Zig files with `zig fmt` before running checks.
 
 ## Style guide
-- Add tests when introducing a new function.
+- Add tests for new functions when their behavior can be meaningfully tested in isolation.
 - Add documentation for every new function.
 - Prefer implementing pure functions.
 - Prefer breaking large, complex functions into smaller, clear functions.
