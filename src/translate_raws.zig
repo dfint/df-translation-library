@@ -1,6 +1,7 @@
 const std = @import("std");
 
 const Dictionary = @import("Dictionary.zig");
+const utils = @import("utils.zig");
 const TagPartsIterator = @import("parse_raws.zig").TagPartsIterator;
 const RawTokenizer = @import("parse_raws.zig").StringTokenizer;
 const getContextFromTag = @import("parse_raws.zig").getContextFromTag;
@@ -269,19 +270,6 @@ test "translate_raws: translate complete RAW tags and preserve non-translatable 
     const allocator = std.testing.allocator;
 
     const Entry = struct { Dictionary.DictionaryKey, []const u8 };
-    const ArrayIterator = struct {
-        entries: []const Entry,
-        index: usize = 0,
-
-        /// Returns the next dictionary entry, or null when all entries are read.
-        pub fn next(self: *@This()) ?Entry {
-            if (self.index >= self.entries.len) return null;
-            const entry = self.entries[self.index];
-            self.index += 1;
-            return entry;
-        }
-    };
-
     const entries = [_]Entry{
         .{ .{ .original_string = "Outside text" }, "Wrong outside" },
         .{ .{ .original_string = "Text 1" }, "Wrong individual translation" },
@@ -292,7 +280,7 @@ test "translate_raws: translate complete RAW tags and preserve non-translatable 
             "[TAG:translated 1:translated 2:]",
         },
     };
-    var iterator = ArrayIterator{ .entries = &entries };
+    var iterator = utils.ArrayIterator(Entry){ .entries = &entries };
     var dictionary = try Dictionary.loadFromIterator(allocator, &iterator);
     defer dictionary.deinit();
 
@@ -308,24 +296,12 @@ test "translate_raws: translate tags with object context and context-free fallba
     const allocator = std.testing.allocator;
 
     const Entry = struct { Dictionary.DictionaryKey, []const u8 };
-    const ArrayIterator = struct {
-        entries: []const Entry,
-        index: usize = 0,
-
-        pub fn next(self: *@This()) ?Entry {
-            if (self.index >= self.entries.len) return null;
-            const entry = self.entries[self.index];
-            self.index += 1;
-            return entry;
-        }
-    };
-
     const entries = [_]Entry{
         .{ .{ .original_string = "[NAME:singular]", .context = "CREATURE:DWARF" }, "[NAME:contextual]" },
         .{ .{ .original_string = "[WORD:plural]" }, "[WORD:global]" },
         .{ .{ .original_string = "[DESCRIPTION:text:]", .context = "CREATURE:DWARF" }, "[DESCRIPTION:contextual:]" },
     };
-    var iterator = ArrayIterator{ .entries = &entries };
+    var iterator = utils.ArrayIterator(Entry){ .entries = &entries };
     var dictionary = try Dictionary.loadFromIterator(allocator, &iterator);
     defer dictionary.deinit();
 

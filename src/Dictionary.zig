@@ -3,6 +3,7 @@
 const std = @import("std");
 
 const StringInterner = @import("StringInterner.zig");
+const utils = @import("utils.zig");
 
 /// Key of the Dictionary
 pub const DictionaryKey = struct {
@@ -171,24 +172,12 @@ test "Dictionary: init from iterator" {
     const allocator = std.testing.allocator;
 
     const DictEntry = struct { DictionaryKey, []const u8 };
-    const ArrayIterator = struct {
-        data: []const DictEntry,
-        index: usize = 0,
-
-        pub fn next(self: *@This()) ?DictEntry {
-            if (self.index >= self.data.len) return null;
-            const value = self.data[self.index];
-            self.index += 1;
-            return value;
-        }
-    };
-
     const data = [_]DictEntry{
         .{ .{ .context = null, .original_string = "Text 1" }, "Translation 1" },
         .{ .{ .context = "Context", .original_string = "Text 2" }, "Translation 2" },
     };
 
-    var iterator = ArrayIterator{ .data = &data };
+    var iterator = utils.ArrayIterator(DictEntry){ .entries = &data };
     var dictionary = try Self.loadFromIterator(allocator, &iterator);
     defer dictionary.deinit();
 
