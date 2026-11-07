@@ -21,7 +21,7 @@ This repository is a Zig library and CLI for processing Dwarf Fortress translati
 - After changes to Zig files or `build.zig.zon` file, run `zig build test` and `zlint . --deny-warnings`.
 - After changes to `test_data/`, run `zig build test` even if no Zig files changed.
 - If any required utility cannot be started, stop the work and report it as a critical problem; do not continue as if the check passed.
-- When changing files under `cli/`, also build the CLI with `cd cli && zig build`.
+- After changes to Zig files or `build.zig.zon`, also build the CLI with `cd cli && zig build`.
 - Format changed Zig files with `zig fmt` before running checks.
 
 ## Style guide
