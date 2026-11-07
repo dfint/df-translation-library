@@ -43,3 +43,23 @@ pub fn collectIterator(comptime T: type, allocator: std.mem.Allocator, iterator:
 
     return array;
 }
+
+test "utils: collectIterator collects values in order" {
+    const allocator = std.testing.allocator;
+    const entries = [_]u8{ 2, 4, 6 };
+    var iterator = ArrayIterator(u8){ .entries = &entries };
+    var collected = try collectIterator(u8, allocator, &iterator);
+    defer collected.deinit(allocator);
+
+    try std.testing.expectEqualSlices(u8, &entries, collected.items);
+}
+
+test "utils: collectIterator handles an empty iterator" {
+    const allocator = std.testing.allocator;
+    const entries: []const u8 = &.{};
+    var iterator = ArrayIterator(u8){ .entries = entries };
+    var collected = try collectIterator(u8, allocator, &iterator);
+    defer collected.deinit(allocator);
+
+    try std.testing.expectEqual(@as(usize, 0), collected.items.len);
+}
