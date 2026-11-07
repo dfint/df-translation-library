@@ -28,9 +28,9 @@ This repository is a Zig library and CLI for processing Dwarf Fortress translati
 - After changing files under `test_data/`, run `zig build test`, even if no Zig files changed.
 
 ## Style guide
-- Add tests for new functions when their behavior can be meaningfully tested in isolation.
 - Add documentation for every new function.
-- Prefer implementing pure functions.
+- Prefer implementing pure, easily testable functions.
+- Add tests for new functions when their behavior can be meaningfully tested in isolation.
 - Prefer breaking large, complex functions into smaller, clear functions.
 - Prefix test names with the module name (without the `.zig` extension) and a colon, for example `parse_csv: ...`.
 - Avoid unnecessary memory allocations when a simpler allocation-free approach is practical.
