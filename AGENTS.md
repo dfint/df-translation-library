@@ -26,6 +26,8 @@ This repository is a Zig library and CLI for processing Dwarf Fortress translati
 
 ## Style guide
 - Add tests when introducing a new function.
+- Add documentation for every new function.
+- Prefer implementing pure functions.
 - Prefer breaking large, complex functions into smaller, clear functions.
 - Prefix test names with the module name (without the `.zig` extension) and a colon, for example `parse_csv: ...`.
 - Avoid unnecessary memory allocations when a simpler allocation-free approach is practical.
