@@ -8,7 +8,7 @@ This repository is a Zig library and CLI for processing Dwarf Fortress translati
 
 - `src/` contains the library modules.
     - `root.zig` exports the public modules;
-    - `parse_raws.zig`, `parse_csv.zig`, and `parse_mo.zig` parse their respective formats;
+    - `parse_raws.zig` and `parse_csv.zig` parse their respective formats;
     - `Dictionary.zig` stores translations;
     - `translate_raws.zig` translates RAW contents.
 - `cli/` is a separate Zig package that depends on the library. Its entry point is `cli/src/main.zig`; command implementations are in `cli/src/`.

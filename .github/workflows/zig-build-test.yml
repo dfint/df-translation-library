@@ -6,6 +6,7 @@ on:
     paths:
       - '**.zig'
       - '**/build.zig.zon'
+      - 'test_data/**'
       - '.github/**.yml'
 
   pull_request:
@@ -13,6 +14,7 @@ on:
     paths:
       - '**.zig'
       - '**/build.zig.zon'
+      - 'test_data/**'
       - '.github/**.yml'
 
 jobs:
@@ -44,7 +46,5 @@ jobs:
       - name: Run tests
         run: zig build test
 
-      - name: Check print_mo cli
-        run: |
-          cd cli
-          zig build run -- print_mo --path=../test_data/test.mo
+      - name: Build cli
+        run: cd cli && zig build
