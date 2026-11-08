@@ -63,11 +63,15 @@ fn isTranslatable(part: []const u8) bool {
     return false;
 }
 
-/// Counts a tag's parts and finds the last translatable part index.
-fn analyzeTag(tag: []const u8) struct {
+/// The part counts and translation eligibility found by `analyzeTag`.
+const TagAnalysis = struct {
     part_count: usize,
     last_translatable_part_index: ?usize,
-} {
+    is_translatable: bool,
+};
+
+/// Counts a tag's parts and identifies whether it contains a translatable part.
+fn analyzeTag(tag: []const u8) TagAnalysis {
     var part_count: usize = 0;
     var last_translatable_part_index: ?usize = null;
     var part_index: usize = 0;
@@ -81,6 +85,7 @@ fn analyzeTag(tag: []const u8) struct {
     return .{
         .part_count = part_count,
         .last_translatable_part_index = last_translatable_part_index,
+        .is_translatable = part_count >= 2 and last_translatable_part_index != null,
     };
 }
 
@@ -88,12 +93,20 @@ test "translate_raws: analyzeTag counts parts and finds the last translatable pa
     const analysis = analyzeTag("[TAG:123:translated:456]");
     try std.testing.expectEqual(@as(usize, 4), analysis.part_count);
     try std.testing.expectEqual(@as(?usize, 2), analysis.last_translatable_part_index);
+    try std.testing.expect(analysis.is_translatable);
 }
 
 test "translate_raws: analyzeTag reports no translatable parts" {
     const analysis = analyzeTag("[TAG:123:n/a]");
     try std.testing.expectEqual(@as(usize, 3), analysis.part_count);
     try std.testing.expectEqual(@as(?usize, null), analysis.last_translatable_part_index);
+    try std.testing.expect(!analysis.is_translatable);
+}
+
+test "translate_raws: analyzeTag considers tags with fewer than two parts non-translatable" {
+    const analysis = analyzeTag("[part seems to be translatable]");
+    try std.testing.expectEqual(@as(usize, 1), analysis.part_count);
+    try std.testing.expect(!analysis.is_translatable);
 }
 
 /// Builds a lookup key ending after the last translatable part.
@@ -229,7 +242,7 @@ fn getTagTranslation(
     }
 
     const analysis = analyzeTag(tag);
-    if (analysis.part_count < 2 or analysis.last_translatable_part_index == null) return null;
+    if (!analysis.is_translatable) return null;
 
     const last = analysis.last_translatable_part_index.?;
     const part_count = analysis.part_count;
