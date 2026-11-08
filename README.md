@@ -1,6 +1,6 @@
 # Dwarf Fortress Translation Library
 
-[![Zig 0.17.1](https://img.shields.io/badge/Zig-0.17.1-orange)](https://ziglang.org/download/0.17.1/release-notes.html)
+[![Zig 0.17.1](https://img.shields.io/badge/Zig-0.17.1-orange)](https://ziglang.org/download/)
 [![zig build test](https://github.com/dfint/df-translation-library/actions/workflows/zig-build-test.yml/badge.svg)](https://github.com/dfint/df-translation-library/actions/workflows/zig-build-test.yml)
 
 - [CLI for the library](cli/)
