@@ -31,6 +31,7 @@ This repository is a Zig library and CLI for processing Dwarf Fortress translati
 - After changing files under `test_data/`, run `zig build test`, even if no Zig files changed.
 
 ## Style guide
+- Follow DRY (Don't Repeat Yourself): when you find duplicated functionality, such as similar functions or structures, or substantial similar code blocks, suggest consolidating it or extracting it into a suitable shared module (for example, `utils.zig`) when feasible.
 - Add documentation for every new function.
 - Prefer implementing pure, easily testable functions.
 - Add tests for new functions when their behavior can be meaningfully tested in isolation.
