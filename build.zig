@@ -34,6 +34,7 @@ pub fn build(b: *std.Build) void {
         .optimize = .Debug,
     });
     const coverage_tests = b.addTest(.{
+        .name = "coverage-test",
         .root_module = coverage_test_mod,
         .test_runner = .{ .path = b.path("test_runner.zig"), .mode = .simple },
     });

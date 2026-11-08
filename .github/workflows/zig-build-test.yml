@@ -23,11 +23,14 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        zig-version: 
-          - "0.17.0"
+        zig-version:
+          - "0.17.1"
           # - "master"
 
     name: Build and Test
+    permissions:
+      contents: read
+      checks: write
     steps:
       - uses: actions/checkout@v7
       - uses: mlugg/setup-zig@v2
@@ -43,8 +46,20 @@ jobs:
           chmod +x zlint
           ./zlint --deny-warnings
 
-      - name: Run tests
-        run: zig build test
+      - name: Install kcov
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes kcov
+
+      - name: Run tests and collect coverage
+        run: zig build test-coverage
+
+      - name: Upload coverage to Coveralls
+        uses: coverallsapp/github-action@v2
+        with:
+          github-token: ${{ github.token }}
+          file: zig-out/coverage/coverage-test/cobertura.xml
+          format: cobertura
 
       - name: Build cli
         run: cd cli && zig build
