@@ -24,7 +24,7 @@ jobs:
       fail-fast: false
       matrix:
         zig-version: 
-          - "0.17.0"
+          - "0.17.1"
           # - "master"
 
     name: Build and Test
