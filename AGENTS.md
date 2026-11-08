@@ -13,7 +13,8 @@ This repository is a Zig library and CLI for processing Dwarf Fortress translati
     - `translate_raws.zig` translates RAW contents.
 - `cli/` is a separate Zig package that depends on the library. Its entry point is `cli/src/main.zig`; command implementations are in `cli/src/`.
 - `test_data/` contains fixtures used by the library tests.
-- `build.zig` defines the library build and `zig build test` step. `zlint.json` configures ZLint.
+- `build.zig` defines the library build and `zig build test` step.
+- `zlint.json` configures ZLint.
 
 ## Working instructions
 
